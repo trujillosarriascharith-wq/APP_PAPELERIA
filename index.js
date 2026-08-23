@@ -1,8 +1,10 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors';
 import { conectaDB, supabase } from './config/supabase.js';
 import AuthRoutes from './routes/Authe.js';
 import UserRoutes from './routes/User.js';
+import productoRouter from './routes/producto.js';
 
 //cargar la variable 
 dotenv.config();
@@ -13,7 +15,8 @@ const app = express();
 
 //leer el json
 app.use(express.json());
-
+//habilitar cors
+app.use(cors());
 //creamos la ruta 
 
 app.get('/',(req,res) =>{
@@ -27,6 +30,7 @@ app.get('/',(req,res) =>{
 //ruta de autenticacion
 app.use('/Auth', AuthRoutes);
 app.use('/usuarios',UserRoutes);
+app.use('/productos', productoRouter);
 
 
 
