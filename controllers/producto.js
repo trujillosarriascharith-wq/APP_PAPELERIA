@@ -33,14 +33,15 @@ export const obtenerPorCat =async (req, res) =>{
 export const crear =   async (req, res) =>{
     try{
         const { id_categoria, nombre, descripcion, precio, cantidad_stock,  } = req.body;
+        
 
         //CLOUDINARY ALMACENA LA URL SEGURA EN REQ.FILE.PATH
-        const imagen_url= req.file ? req.file.path: null;
-        if (!nombre || !precio || !imagen_url) {
-            return res.status (400) .json ({error:  'nombre, precio e imagen_url requeridos'});
+        const imagen= req.file ? req.file.path: null;
+        if (!nombre || !precio || !imagen) {
+            return res.status (400) .json ({error:  'nombre, precio e imagen requeridos'});
         }
     const {data, error} = await crearProducto({id_categoria,
-        nombre, descripcion, precio, cantidad_stock, imagen_url});
+        nombre, descripcion, precio, cantidad_stock, imagen});
         if (error) return res.status (500) .json ({error: 'Error al crear'});
         return res.status (201) .json ({ message: 'Creado', producto: data [0]});
     }catch  (error) {

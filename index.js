@@ -5,7 +5,9 @@ import { conectaDB, supabase } from './config/supabase.js';
 import AuthRoutes from './routes/Authe.js';
 import UserRoutes from './routes/User.js';
 import productoRouter from './routes/producto.js';
-
+import pedidosRouter from './routes/pedido.js';
+import carritoRoutes from "./routes/carrito.js";
+import categoriasRoutes from "./routes/categorias.js";
 //cargar la variable 
 dotenv.config();
 conectaDB();
@@ -17,6 +19,7 @@ const app = express();
 app.use(express.json());
 //habilitar cors
 app.use(cors());
+
 //creamos la ruta 
 
 app.get('/',(req,res) =>{
@@ -31,7 +34,9 @@ app.get('/',(req,res) =>{
 app.use('/Auth', AuthRoutes);
 app.use('/usuarios',UserRoutes);
 app.use('/productos', productoRouter);
-
+app.use('/api', pedidosRouter);
+app.use("/carrito", carritoRoutes);
+app.use("/categorias", categoriasRoutes);
 
 
 //configuramos el puerto 
