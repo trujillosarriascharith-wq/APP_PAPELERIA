@@ -1,101 +1,89 @@
-import { supabase } from "../config/supabase.js";
+import {supabase} from "../config/supabase.js";
 
-// ===== CARRITO =====
-
+// Obtener el carrito activo de un usuario
 export const obtenerCarritoPorUsuario = async (id_usuario) => {
-  const { data, error } = await supabase
+    const {data, error} = await supabase
     .from('carrito')
-    .select('*')
+    .select('id_carrito, id_usuario, fecha_creacion')
     .eq('id_usuario', id_usuario)
-    .order('fecha_creacion', { ascending: false })
-    .limit(1)
-    .single();
-  return { data, error };
+    .maybeSingle(); // <-- CAMBIA single() por maybeSingle()
+    return {data, error};
 };
 
+// Crear un carrito nuevo para un usuario
 export const crearCarrito = async (id_usuario) => {
-  const { data, error } = await supabase
+    const {data, error} = await supabase
     .from('carrito')
-    .insert([{ id_usuario }])
-    .select()
-    .single();
-  return { data, error };
+    .insert({ id_usuario })
+    .select('id_carrito, id_usuario, fecha_creacion');
+    return {data, error};
 };
 
-export const eliminarCarrito = async (id_carrito) => {
-  const { error } = await supabase.from('carrito').delete().eq('id_carrito', id_carrito);
-  return { error };
+// Obtiene el carrito del usuario, o lo crea si no existe
+export const obtenerOCrearCarrito = async (id_usuario) => {
+    const { data: carritoExistente } = await obtenerCarritoPorUsuario(id_usuario);
+    if (carritoExistente) {
+        return { data: carritoExistente, error: null };
+    }
+
+    const { data, error } = await crearCarrito(id_usuario);
+    if (error) return { data: null, error };
+    return { data: data[0], error: null };
 };
 
-// ===== DETALLE_CARRITO =====
-
+// Obtener el detalle (items) de un carrito, con datos del producto
 export const obtenerDetalleCarrito = async (id_carrito) => {
-  const { data, error } = await supabase
+    const {data, error} = await supabase
     .from('detalle_carrito')
-    .select(`
-      *,
-      productos (
-        id_producto,
-        nombre,
-        precio,
-        imagen
-      )
-    `)
+    .select('id_detalle_carrito, id_carrito, id_producto, cantidad, productos(nombre, precio, imagen)')
     .eq('id_carrito', id_carrito);
-  return { data, error };
+    return {data, error};
 };
 
-export const agregarProductoCarrito = async (id_carrito, id_producto, cantidad) => {
-  // Verificar si el producto ya está en el carrito
-  const { data: existente } = await supabase
+// Buscar si un producto ya esta en el carrito
+export const obtenerDetalleCarritoPorProducto = async (id_carrito, id_producto) => {
+    const {data, error} = await supabase
     .from('detalle_carrito')
-    .select('*')
+    .select('id_detalle_carrito, id_carrito, id_producto, cantidad')
     .eq('id_carrito', id_carrito)
     .eq('id_producto', id_producto)
     .single();
-
-  if (existente) {
-    // Si existe, suma la cantidad
-    const { data, error } = await supabase
-      .from('detalle_carrito')
-      .update({ cantidad: existente.cantidad + cantidad })
-      .eq('id_detalle_carrito', existente.id_detalle_carrito)
-      .select()
-      .single();
-    return { data, error };
-  } else {
-    // Si no existe, lo inserta
-    const { data, error } = await supabase
-      .from('detalle_carrito')
-      .insert([{ id_carrito, id_producto, cantidad }])
-      .select()
-      .single();
-    return { data, error };
-  }
+    return {data, error};
 };
 
-export const actualizarCantidad = async (id_detalle_carrito, cantidad) => {
-  const { data, error } = await supabase
+// Agregar un item nuevo al carrito
+export const agregarDetalleCarrito = async (id_carrito, id_producto, cantidad) => {
+    const {data, error} = await supabase
+    .from('detalle_carrito')
+    .insert({ id_carrito, id_producto, cantidad })
+    .select('id_detalle_carrito, id_carrito, id_producto, cantidad');
+    return {data, error};
+};
+
+// Actualizar la cantidad de un item del carrito
+export const actualizarCantidadDetalle = async (id_detalle_carrito, cantidad) => {
+    const {data, error} = await supabase
     .from('detalle_carrito')
     .update({ cantidad })
     .eq('id_detalle_carrito', id_detalle_carrito)
-    .select()
-    .single();
-  return { data, error };
+    .select('id_detalle_carrito, id_carrito, id_producto, cantidad');
+    return {data, error};
 };
 
-export const eliminarProductoCarrito = async (id_detalle_carrito) => {
-  const { error } = await supabase
+// Eliminar un item del carrito
+export const eliminarDetalleCarrito = async (id_detalle_carrito) => {
+    const {data, error} = await supabase
     .from('detalle_carrito')
     .delete()
     .eq('id_detalle_carrito', id_detalle_carrito);
-  return { error };
+    return {data, error};
 };
 
+// Vaciar todo el carrito (se usa al finalizar la compra)
 export const vaciarCarrito = async (id_carrito) => {
-  const { error } = await supabase
+    const {data, error} = await supabase
     .from('detalle_carrito')
     .delete()
     .eq('id_carrito', id_carrito);
-  return { error };
+    return {data, error};
 };

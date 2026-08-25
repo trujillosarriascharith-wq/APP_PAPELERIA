@@ -1,33 +1,13 @@
-import { Router } from "express";
-import {
-  getCategorias,
-  getCategoriaPorId,
-  createCategoria,
-  updateCategoria,
-  deleteCategoria
-} from "../controllers/categorias.js";
+import express from 'express';
+import { crear, listar, obtener, actualizar, eliminar } from '../controllers/categorias.js';
+import { verificarToken } from '../middlewares/authMiddlewares.js';
 
-const router = Router();
+const router = express.Router();
 
-// Obtener todas -> GET http://localhost:3000/categorias
-router.get("/", getCategorias);
-
-// Obtener una por ID -> GET http://localhost:3000/categorias/1
-router.get("/:id_categoria", getCategoriaPorId);
-
-// Crear -> POST http://localhost:3000/categorias
-router.post("/", createCategoria);
-
-// Actualizar -> PUT http://localhost:3000/categorias/1
-router.put("/:id_categoria", updateCategoria);
-
-// Eliminar -> DELETE http://localhost:3000/categorias/1
-router.delete("/:id_categoria", deleteCategoria);
+router.get('/', listar);
+router.get('/:id', obtener);
+router.post('/', verificarToken, crear);
+router.put('/:id', verificarToken, actualizar);
+router.delete('/:id', verificarToken, eliminar);
 
 export default router;
-// Crear: POST http://localhost:3000/categorias
-// {
-//   "nombre": "Flores",
-//   "descripcion": "Arreglos florales para toda ocasión",
-//   "imagen": "https://ejemplo.com/flores.jpg"
-// }

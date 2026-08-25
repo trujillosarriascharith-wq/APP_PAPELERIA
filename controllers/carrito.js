@@ -1,105 +1,181 @@
-import * as CarritoModel from "../models/carrito.js";
+import {
+    obtenerOCrearCarrito,
+    obtenerDetalleCarrito,
+    obtenerDetalleCarritoPorProducto,
+    agregarDetalleCarrito,
+    actualizarCantidadDetalle,
+    eliminarDetalleCarrito,
+    vaciarCarrito
+} from '../models/carrito.js';
 
-// 1. Ver carrito de un usuario
-export const obtenerCarrito = async (req, res) => {
-  try {
-    const { id_usuario } = req.params; // GET /carrito/:id_usuario
+// Obtener el carrito del usuario autenticado con sus items
+export const obtenerMiCarrito = async (req, res) => {
+    try {
+        console.log("USUARIO DEL TOKEN:", req.usuario); // <--- agrega esto
+      const id_usuario = req.usuario.id_usuario;
 
-    const { data: carrito, error } = await CarritoModel.obtenerCarritoPorUsuario(id_usuario);
+        const { data: carrito, error: errorCarrito } = await obtenerOCrearCarrito(id_usuario);
+        if (errorCarrito) {
+  console.log(errorCarrito); // mira la terminal
+  return res.status(500).json({
+    error: 'Error al obtener el carrito',
+    detalle: errorCarrito.message
+  });
+}
+        const { data: items, error: errorItems } = await obtenerDetalleCarrito(carrito.id_carrito);
+        if (errorItems) {
+            return res.status(500).json({
+                error: 'Error al obtener los items del carrito'
+            });
+        }
 
-    if (error || !carrito) {
-      return res.status(200).json({ carrito: null, productos: [] });
+        return res.status(200).json({ carrito, items });
+    } catch (error) {
+        console.error('Error en obtener mi carrito:', error);
+        res.status(500).json({
+            error: 'Error en el servidor',
+            detalle: error.message
+        });
     }
-
-    const { data: productos, error: errorDetalle } = await CarritoModel.obtenerDetalleCarrito(carrito.id_carrito);
-
-    if (errorDetalle) {
-      return res.status(500).json({ error: "Error al obtener detalle", detalle: errorDetalle });
-    }
-
-    res.json({ carrito, productos });
-
-  } catch (err) {
-    res.status(500).json({ error: "Error en servidor", detalle: err.message });
-  }
 };
 
-// 2. Agregar producto al carrito
-export const agregarAlCarrito = async (req, res) => {
-  try {
-    const { id_usuario, id_producto, cantidad } = req.body;
+// Agregar un producto al carrito (o sumar cantidad si ya existe)
+export const agregarProducto = async (req, res) => {
+    try {
+        console.log("📥 Datos recibidos en AGREGAR AL CARRITO:", req.body);
+       const id_usuario = req.usuario.id_usuario;
+        const { id_producto, cantidad } = req.body;
 
-    if (!id_usuario || !id_producto) {
-      return res.status(400).json({ error: "id_usuario y id_producto son obligatorios" });
+        if (!id_producto || !cantidad) {
+            return res.status(400).json({
+                error: 'El id_producto y la cantidad son requeridos'
+            });
+        }
+
+        const { data: carrito, error: errorCarrito } = await obtenerOCrearCarrito(id_usuario);
+        if (errorCarrito) {
+            return res.status(500).json({
+                error: 'Error al obtener el carrito'
+            });
+        }
+
+        const { data: itemExistente } = await obtenerDetalleCarritoPorProducto(carrito.id_carrito, id_producto);
+
+        if (itemExistente) {
+            const { data, error } = await actualizarCantidadDetalle(
+                itemExistente.id_detalle_carrito,
+                itemExistente.cantidad + cantidad
+            );
+            if (error) {
+                return res.status(500).json({ error: 'Error al actualizar el carrito' });
+            }
+            return res.status(200).json({
+                message: 'Cantidad actualizada en el carrito',
+                item: data[0]
+            });
+        }
+
+        const { data, error } = await agregarDetalleCarrito(carrito.id_carrito, id_producto, cantidad);
+        if (error) {
+             console.log(error);
+            return res.status(500).json({
+                error: 'Error al agregar el producto al carrito'
+            });
+        }
+
+        return res.status(201).json({
+            message: 'Producto agregado al carrito',
+            item: data[0]
+        });
+    } catch (error) {
+        console.error('Error en agregar producto al carrito:', error);
+        res.status(500).json({
+            error: 'Error en el servidor',
+            detalle: error.message
+        });
     }
-
-    // Buscar si el usuario ya tiene carrito, si no, crearlo
-    let { data: carrito } = await CarritoModel.obtenerCarritoPorUsuario(id_usuario);
-
-    if (!carrito) {
-      const { data: nuevoCarrito, error: errorCrear } = await CarritoModel.crearCarrito(id_usuario);
-      if (errorCrear) return res.status(500).json({ error: "Error al crear carrito", detalle: errorCrear });
-      carrito = nuevoCarrito;
-    }
-
-    const { data, error } = await CarritoModel.agregarProductoCarrito(
-      carrito.id_carrito,
-      id_producto,
-      cantidad || 1
-    );
-
-    if (error) return res.status(500).json({ error: "Error al agregar", detalle: error });
-
-    res.status(201).json({ mensaje: "Producto agregado al carrito", data });
-
-  } catch (err) {
-    res.status(500).json({ error: "Error en servidor", detalle: err.message });
-  }
 };
 
-// 3. Actualizar cantidad
-export const actualizarCantidadCarrito = async (req, res) => {
-  try {
-    const { id_detalle_carrito } = req.params;
-    const { cantidad } = req.body;
+// Actualizar la cantidad de un item del carrito
+export const actualizarCantidad = async (req, res) => {
+    try {
+        const { id_detalle } = req.params;
+        const { cantidad } = req.body;
 
-    if (cantidad < 1) {
-      return res.status(400).json({ error: "La cantidad debe ser mayor a 0" });
+        if (!cantidad || cantidad <= 0) {
+            return res.status(400).json({
+                error: 'La cantidad debe ser mayor a 0'
+            });
+        }
+
+        const { data, error } = await actualizarCantidadDetalle(id_detalle, cantidad);
+        if (error) {
+            return res.status(500).json({
+                error: 'Error al actualizar la cantidad'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Cantidad actualizada exitosamente',
+            item: data[0]
+        });
+    } catch (error) {
+        console.error('Error en actualizar cantidad:', error);
+        res.status(500).json({
+            error: 'Error en el servidor',
+            detalle: error.message
+        });
     }
-
-    const { data, error } = await CarritoModel.actualizarCantidad(id_detalle_carrito, cantidad);
-    if (error) return res.status(500).json({ error: "Error al actualizar", detalle: error });
-
-    res.json({ mensaje: "Cantidad actualizada", data });
-  } catch (err) {
-    res.status(500).json({ error: "Error en servidor", detalle: err.message });
-  }
 };
 
-// 4. Eliminar un producto del carrito
-export const eliminarDelCarrito = async (req, res) => {
-  try {
-    const { id_detalle_carrito } = req.params;
-    const { error } = await CarritoModel.eliminarProductoCarrito(id_detalle_carrito);
+// Eliminar un item del carrito
+export const eliminarProducto = async (req, res) => {
+    try {
+        const { id_detalle } = req.params;
 
-    if (error) return res.status(500).json({ error: "Error al eliminar", detalle: error });
+        const { error } = await eliminarDetalleCarrito(id_detalle);
+        if (error) {
+            return res.status(500).json({
+                error: 'Error al eliminar el producto del carrito'
+            });
+        }
 
-    res.json({ mensaje: "Producto eliminado del carrito" });
-  } catch (err) {
-    res.status(500).json({ error: "Error en servidor", detalle: err.message });
-  }
+        return res.status(200).json({
+            message: 'Producto eliminado del carrito'
+        });
+    } catch (error) {
+        console.error('Error en eliminar producto del carrito:', error);
+        res.status(500).json({
+            error: 'Error en el servidor',
+            detalle: error.message
+        });
+    }
 };
 
-// 5. Vaciar todo el carrito
-export const vaciarCarrito = async (req, res) => {
-  try {
-    const { id_carrito } = req.params;
-    const { error } = await CarritoModel.vaciarCarrito(id_carrito);
+// Vaciar el carrito completo
+export const vaciar = async (req, res) => {
+    try {
+        const id_usuario = req.usuario.id_usuario;
+        const { data: carrito, error: errorCarrito } = await obtenerOCrearCarrito(id_usuario);
+        if (errorCarrito) {
+            return res.status(500).json({ error: 'Error al obtener el carrito' });
+        }
 
-    if (error) return res.status(500).json({ error: "Error al vaciar carrito", detalle: error });
+        const { error } = await vaciarCarrito(carrito.id_carrito);
+        if (error) {
+            return res.status(500).json({
+                error: 'Error al vaciar el carrito'
+            });
+        }
 
-    res.json({ mensaje: "Carrito vaciado" });
-  } catch (err) {
-    res.status(500).json({ error: "Error en servidor", detalle: err.message });
-  }
+        return res.status(200).json({
+            message: 'Carrito vaciado exitosamente'
+        });
+    } catch (error) {
+        console.error('Error en vaciar carrito:', error);
+        res.status(500).json({
+            error: 'Error en el servidor',
+            detalle: error.message
+        });
+    }
 };

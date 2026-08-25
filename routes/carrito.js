@@ -1,34 +1,13 @@
-import { Router } from "express";
-import {
-  obtenerCarrito,
-  agregarAlCarrito,
-  actualizarCantidadCarrito,
-  eliminarDelCarrito,
-  vaciarCarrito
-} from "../controllers/carrito.js";
+import express from 'express';
+import { obtenerMiCarrito, agregarProducto, actualizarCantidad, eliminarProducto, vaciar } from '../controllers/carrito.js';
+import { verificarToken } from '../middlewares/authMiddlewares.js';
 
-const router = Router();
+const router = express.Router();
 
-// Ver carrito de un usuario -> GET http://localhost:3000/carrito/1
-router.get("/:id_usuario", obtenerCarrito);
-
-// Agregar producto -> POST http://localhost:3000/carrito
-router.post("/", agregarAlCarrito);
-
-// Actualizar cantidad -> PUT http://localhost:3000/carrito/5
-router.put("/:id_detalle_carrito", actualizarCantidadCarrito);
-
-// Eliminar un producto -> DELETE http://localhost:3000/carrito/5
-router.delete("/detalle/:id_detalle_carrito", eliminarDelCarrito);
-
-// Vaciar carrito completo -> DELETE http://localhost:3000/carrito/vaciar/1
-router.delete("/vaciar/:id_carrito", vaciarCarrito);
+router.get('/', verificarToken, obtenerMiCarrito);
+router.post('/', verificarToken, agregarProducto);
+router.put('/:id_detalle', verificarToken, actualizarCantidad);
+router.delete('/:id_detalle', verificarToken, eliminarProducto);
+router.delete('/', verificarToken, vaciar);
 
 export default router;
-// //Agregar: POST http://localhost:3000/carrito
-// json    {
-//       "id_usuario": 1,
-//       "id_producto": 1,
-//       "cantidad": 2
-//     }
-// Ver: GET http://localhost:3000/carrito/1

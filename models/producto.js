@@ -1,36 +1,74 @@
-import { supabase } from '../config/supabase.js';
+import {supabase} from "../config/supabase.js";
 
-export const obtenerTodos = async () => {
-    const {data, error} = await supabase.from ('productos').select ('*');
+// Crear un producto
+export const crearProducto = async (id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado) => {
+    const {data, error} = await supabase
+    .from('productos')
+    .insert({id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado: estado || 'activo'})
+    .select('id_producto, id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado');
     return {data, error};
 };
 
-export const obtenerPorId = async (id_producto) => {
+// Obtener todos los productos (con el nombre de su categoria)
+export const obtenerProductos = async () => {
     const {data, error} = await supabase
-    . from ('productos').select ('*').eq ('id_producto', id_producto).single();
+    .from('productos')
+    .select('id_producto, id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado, categorias(nombre)');
     return {data, error};
 };
 
-export const obtenerPorCategoria = async (id_categoria) =>{
+// Obtener productos filtrando por categoria
+export const obtenerProductosPorCategoria = async (id_categoria) => {
     const {data, error} = await supabase
-    .from ('productos') .select ('*') .eq ('id_categoria', id_categoria);
-    return {data, error}; 
-};
-
-export const crearProducto = async (productoData) => {
-    const {data, error} = await supabase
-    .from ('productos') .insert (productoData) .select();
+    .from('productos')
+    .select('id_producto, id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado')
+    .eq('id_categoria', id_categoria);
     return {data, error};
 };
 
-export const actualizarProducto = async (id_producto, productoData) => {
+// Obtener un producto por id
+export const obtenerProductoPorId = async (id) => {
     const {data, error} = await supabase
-    .from ('productos') .update (productoData) .eq ('id_producto', id_producto) .select();
+    .from('productos')
+    .select('id_producto, id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado')
+    .eq('id_producto', id)
+    .single();
     return {data, error};
 };
 
-export  const eliminarProducto = async (id_producto) =>{
+// Actualizar un producto
+export const actualizarProducto = async (id, campos) => {
     const {data, error} = await supabase
-    .from ('productos') .delete ().eq ('id_producto', id_producto) .select();
+    .from('productos')
+    .update(campos)
+    .eq('id_producto', id)
+    .select('id_producto, id_categoria, nombre, descripcion, precio, cantidad_stock, imagen, estado');
+    return {data, error};
+};
+
+// Descontar stock de un producto (usado al confirmar un pedido)
+export const descontarStockProducto = async (id_producto, cantidad) => {
+    const { data: producto, error: errorBusqueda } = await obtenerProductoPorId(id_producto);
+    if (errorBusqueda) return { data: null, error: errorBusqueda };
+
+    const nuevoStock = producto.cantidad_stock - cantidad;
+    if (nuevoStock < 0) {
+        return { data: null, error: { message: `Stock insuficiente para el producto ${id_producto}` } };
+    }
+
+    const {data, error} = await supabase
+    .from('productos')
+    .update({ cantidad_stock: nuevoStock })
+    .eq('id_producto', id_producto)
+    .select('id_producto, cantidad_stock');
+    return {data, error};
+};
+
+// Eliminar un producto
+export const eliminarProducto = async (id) => {
+    const {data, error} = await supabase
+    .from('productos')
+    .delete()
+    .eq('id_producto', id);
     return {data, error};
 };
