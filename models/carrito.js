@@ -4,7 +4,10 @@ import {supabase} from "../config/supabase.js";
 export const obtenerCarritoPorUsuario = async (id_usuario) => {
     const {data, error} = await supabase
     .from('carrito')
-    .select('id_carrito, id_usuario, fecha_creacion')
+    .select(`
+      *,
+      producto:id_producto(id_producto, nombre, precio, imagen_url)
+    `)
     .eq('id_usuario', id_usuario)
     .maybeSingle(); // <-- CAMBIA single() por maybeSingle()
     return {data, error};
@@ -80,10 +83,15 @@ export const eliminarDetalleCarrito = async (id_detalle_carrito) => {
 };
 
 // Vaciar todo el carrito (se usa al finalizar la compra)
-export const vaciarCarrito = async (id_carrito) => {
-    const {data, error} = await supabase
-    .from('detalle_carrito')
-    .delete()
-    .eq('id_carrito', id_carrito);
+export const vaciarCarritoPorUsuario = async (id_usuario) => {
+  const { data, error } = await supabase
+   .from('carrito')
+   .delete()
+   .eq('id_usuario', id_usuario);
     return {data, error};
 };
+
+// alias para que no te falle si lo importas como "vaciar"
+export const vaciar = vaciarCarritoPorUsuario;
+
+export const obtenerCarrito = obtenerCarritoPorUsuario;

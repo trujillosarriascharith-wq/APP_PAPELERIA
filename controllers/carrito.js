@@ -1,3 +1,4 @@
+import { supabase } from '../config/supabase.js';
 import {
     obtenerOCrearCarrito,
     obtenerDetalleCarrito,
@@ -5,8 +6,9 @@ import {
     agregarDetalleCarrito,
     actualizarCantidadDetalle,
     eliminarDetalleCarrito,
-    vaciarCarrito
+    vaciarCarritoPorUsuario,
 } from '../models/carrito.js';
+
 
 // Obtener el carrito del usuario autenticado con sus items
 export const obtenerMiCarrito = async (req, res) => {
@@ -153,29 +155,13 @@ export const eliminarProducto = async (req, res) => {
 };
 
 // Vaciar el carrito completo
-export const vaciar = async (req, res) => {
-    try {
-        const id_usuario = req.usuario.id_usuario;
-        const { data: carrito, error: errorCarrito } = await obtenerOCrearCarrito(id_usuario);
-        if (errorCarrito) {
-            return res.status(500).json({ error: 'Error al obtener el carrito' });
-        }
-
-        const { error } = await vaciarCarrito(carrito.id_carrito);
-        if (error) {
-            return res.status(500).json({
-                error: 'Error al vaciar el carrito'
-            });
-        }
-
-        return res.status(200).json({
-            message: 'Carrito vaciado exitosamente'
-        });
-    } catch (error) {
-        console.error('Error en vaciar carrito:', error);
-        res.status(500).json({
-            error: 'Error en el servidor',
-            detalle: error.message
-        });
-    }
+export const vaciarCarrito = async (req, res) => {
+  try {
+    const id_usuario = req.usuario.id_usuario || req.usuario.id;
+    const { error } = await supabase.from('carrito').delete().eq('id_usuario', id_usuario);
+    if (error) throw error;
+    return res.status(200).json({ message: "Carrito vaciado" });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };

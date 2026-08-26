@@ -5,7 +5,7 @@ import { conectaDB, supabase } from './config/supabase.js';
 import AuthRoutes from './routes/Authe.js';
 import UserRoutes from './routes/User.js';
 import productoRouter from './routes/producto.js';
-import pedidosRouter from './routes/pedido.js';
+import pedidoRoutes from './routes/pedido.js';
 import carritoRoutes from './routes/carrito.js';
 import categoriasRoutes from "./routes/categorias.js";
 
@@ -35,7 +35,7 @@ app.get('/',(req,res) =>{
 app.use('/Auth', AuthRoutes);
 app.use('/usuarios',UserRoutes);
 app.use('/api/productos', productoRouter);
-app.use('/api', pedidosRouter);
+app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use("/api/categorias", categoriasRoutes);
 
