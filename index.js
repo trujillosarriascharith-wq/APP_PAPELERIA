@@ -8,7 +8,7 @@ import productoRouter from './routes/producto.js';
 import pedidoRoutes from './routes/pedido.js';
 import carritoRoutes from './routes/carrito.js';
 import categoriasRoutes from "./routes/categorias.js";
-
+import pagosRoutes from "./routes/pagos.js"
 //cargar la variable 
 dotenv.config();
 conectaDB();
@@ -38,7 +38,7 @@ app.use('/api/productos', productoRouter);
 app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use("/api/categorias", categoriasRoutes);
-
+app.use("/api/pagos", pagosRoutes);
 
 
 //configuramos el puerto 
