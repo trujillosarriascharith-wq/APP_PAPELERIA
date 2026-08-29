@@ -2,17 +2,21 @@ import { crearPago, obtenerPagos, obtenerPagoPorPedido, actualizarEstadoPago, el
 import { actualizarEstadoPedido } from '../models/pedido.js';
 
 //registrar un pago
+//registrar un pago
 export const registrarPago = async (req, res) => {
     try {
         console.log("💳 Datos recibidos en CREAR PAGO:", req.body);
         const { id_pedido, metodo_pago, monto } = req.body;
 
-        if (!id_pedido || !metodo_pago || !monto) {
+        if (!id_pedido ||!metodo_pago ||!monto) {
             return res.status(400).json({ error: 'id_pedido, metodo_pago y monto son requeridos' });
         }
 
         const { data, error } = await crearPago(id_pedido, metodo_pago, monto);
-        if (error) return res.status(500).json({ error: 'Error al registrar el pago' });
+        if (error) {
+            console.error("ERROR SUPABASE REAL:", error);
+            return res.status(500).json({ error: 'Error al registrar el pago', detalle_real: error.message, codigo: error.code, hint: error.hint });
+        }
 
         return res.status(201).json({ message: 'Pago registrado exitosamente', pago: data[0] });
     } catch (error) {
@@ -20,7 +24,6 @@ export const registrarPago = async (req, res) => {
         res.status(500).json({ error: 'Error en el servidor', detalle: error.message });
     }
 };
-
 //listar todos los pagos
 export const listarPagos = async (req, res) => {
     try {
@@ -54,18 +57,26 @@ export const editarEstadoPago = async (req, res) => {
 
         if (!estado) return res.status(400).json({ error: 'estado es requerido' });
 
-        const { data, error } = await actualizarEstadoPago(id, estado);
-        if (error) return res.status(500).json({ error: 'Error al actualizar el estado del pago' });
+        // Validamos que solo entren los estados que tu tabla permite
+        if (!['pagado', 'fallido'].includes(estado)) {
+            return res.status(400).json({ error: 'estado debe ser pagado o fallido' });
+        }
 
-        //si el pago se confirma, actualizar el pedido a pagado
-        if (estado === 'confirmado' && id_pedido) {
+        const { data, error } = await actualizarEstadoPago(id, estado);
+        if (error) {
+            console.error("ERROR SUPABASE REAL:", error);
+            return res.status(500).json({ error: 'Error al actualizar el estado del pago', detalle_real: error.message });
+        }
+
+        // si el pago es pagado, actualizamos el pedido a pagado
+        if (estado === 'pagado' && id_pedido) {
             await actualizarEstadoPedido(id_pedido, 'pagado');
         }
 
         return res.status(200).json({ message: 'Estado del pago actualizado', pago: data[0] });
     } catch (error) {
         console.error('Error en editar estado pago:', error);
-        res.status(500).json({ error: 'Error en el servidor' });
+        res.status(500).json({ error: 'Error en el servidor', detalle: error.message });
     }
 };
 
