@@ -9,6 +9,7 @@ import pedidoRoutes from './routes/pedido.js';
 import carritoRoutes from './routes/carrito.js';
 import categoriasRoutes from "./routes/categorias.js";
 import pagosRoutes from "./routes/pagos.js"
+import chatRoutes from "./routes/chatRoutes.js"; // Importa las rutas de chat
 //cargar la variable 
 dotenv.config();
 conectaDB();
@@ -39,6 +40,7 @@ app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use("/api/categorias", categoriasRoutes);
 app.use("/api/pagos", pagosRoutes);
+app.use("/api/chat", chatRoutes); // Agrega las rutas de chat
 
 
 //configuramos el puerto 
