@@ -48,6 +48,41 @@ Características del Proyecto
 **nmp run dev
 
 
+Estructura del programa 
+
+
+APP_PAPELERIAS/
+└── backend/
+    ├── config/             # Configuraciones (Cloudinary, Supabase, etc.)
+    │   ├── cloudinary.js
+    │   └── supabase.js
+    ├── controllers/        # Lógica de negocio de la aplicación
+    ├── middlewares/        # Validaciones, autenticación y middleware
+    ├── models/             # Modelos y esquemas de datos
+    ├── node_modules/       # Dependencias instaladas del proyecto
+    ├── routes/             # Definición de rutas y endpoints del API
+    ├── services/           # Servicios externos y lógica de soporte
+    ├── uploads/            # Archivos y recursos subidos localmente
+    ├── utils/              # Funciones auxiliares y helpers
+    ├── .env                # Variables de entorno secretas (Local)
+    ├── .gitignore          # Exclusiones de control de versiones
+    ├── index.js            # Punto de entrada y servidor principal
+    ├── package-lock.json   # Registro exacto de versiones de dependencias
+    ├── package.json        # Dependencias y scripts de Node.js
+    └── README.md           # Documentación principal del proyecto
+
+
+
+**👩‍💻Autor**
+
+
+* **Charlie Briyet Trujillo Sarrias**
+* *Tecnóloga en Análisis y Desarrollo de Software (ADSO)*
+
+
+
+
+
 
 
 
