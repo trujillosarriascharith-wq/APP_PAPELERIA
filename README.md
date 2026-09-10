@@ -51,25 +51,8 @@ Características del Proyecto
 Estructura del programa 
 
 
-APP_PAPELERIAS/
-└── backend/
-    ├── config/             # Configuraciones (Cloudinary, Supabase, etc.)
-    │   ├── cloudinary.js
-    │   └── supabase.js
-    ├── controllers/        # Lógica de negocio de la aplicación
-    ├── middlewares/        # Validaciones, autenticación y middleware
-    ├── models/             # Modelos y esquemas de datos
-    ├── node_modules/       # Dependencias instaladas del proyecto
-    ├── routes/             # Definición de rutas y endpoints del API
-    ├── services/           # Servicios externos y lógica de soporte
-    ├── uploads/            # Archivos y recursos subidos localmente
-    ├── utils/              # Funciones auxiliares y helpers
-    ├── .env                # Variables de entorno secretas (Local)
-    ├── .gitignore          # Exclusiones de control de versiones
-    ├── index.js            # Punto de entrada y servidor principal
-    ├── package-lock.json   # Registro exacto de versiones de dependencias
-    ├── package.json        # Dependencias y scripts de Node.js
-    └── README.md           # Documentación principal del proyecto
+<img width="867" height="515" alt="Captura de pantalla 2026-09-10 125552" src="https://github.com/user-attachments/assets/335de9b5-06a3-4e61-a978-f4615ffe185e" />
+
 
 
 
