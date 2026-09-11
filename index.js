@@ -45,11 +45,14 @@ app.use("/api/chat", chatRoutes); // Agrega las rutas de chat
 
 //configuramos el puerto 
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
 
 //poner a escuchar el servidor 
  app.listen(PORT,() =>{
      conectaDB(); // Llama a la función para ver el mensaje en consola al iniciar
     console.log(`Servidor escuchando en el puerto ${PORT}`); // Corregido a backticks ``
     console.log(`http://localhost:${PORT}`);
+    console.log(` Servidor corriendo en http://localhost:${PORT}`);
+
  });
