@@ -138,7 +138,7 @@ export const login = async(req,res)=>{
            };
 
            //verificamos si el usuario ha sido verificado
-         if (!usuarios.isVerificado) {
+         if (!usuarios.isVerified) {
             return res.status(403).json({
                 error: 'Tu cuenta no ha sido verificada. Por favor ingrese el codigo enviado a tu correo antes de iniciar sesion.'
             });
@@ -194,9 +194,9 @@ export const verificarCuenta = async (req, res) => {
         }
 
         //1.Buscar el usuario en supabase 
-        const { data: usuario, error: errorUsuario } = await  supabase
+        const { data: usuario, error: errorUsuario } = await supabase
             .from('usuarios')
-            .select('id_usuario, nombre, telefono, direccion, email, rol, isVerificado, codigoVerificacion, codigoVerificacionExpiracion')
+            .select('id_usuario, nombre, telefono, direccion, email, rol, isVerified, codigoVerificacion, codigoVerificacionExpiracion')
             .eq('email', email)
             .single();
 
@@ -207,15 +207,14 @@ export const verificarCuenta = async (req, res) => {
         }
 
         //2.Verificar si  ya esta activo
-        if (usuario.isVerificado) {
+        if (usuario.isVerified) {
             return res.status(400).json({
                 error: 'La cuenta ya se encuentra verificada'
             });
         }
 
         //3.comparar el codigo 
-
-        if (String(usuario.codigoVerificacion) .trim() !== String(codigo) .trim()) {
+        if (String(usuario.codigoVerificacion).trim() !== String(codigoVerificacion).trim()) {
             return res.status(400).json({
                 error: 'Codigo de verificación es  incorrecto'
             });
@@ -256,10 +255,7 @@ export const verificarCuenta = async (req, res) => {
             error: error.message
         });
     }   
-
 };
-        
-
 
 
 

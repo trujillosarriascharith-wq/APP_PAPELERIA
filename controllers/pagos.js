@@ -2,7 +2,6 @@ import { crearPago, obtenerPagos, obtenerPagoPorPedido, actualizarEstadoPago, el
 import { actualizarEstadoPedido } from '../models/pedido.js';
 
 //registrar un pago
-//registrar un pago
 export const registrarPago = async (req, res) => {
     try {
         console.log("💳 Datos recibidos en CREAR PAGO:", req.body);
