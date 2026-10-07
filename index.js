@@ -15,6 +15,7 @@ import notificacionesRoutes from "./routes/notificaciones.js";
 dotenv.config();
 conectaDB();
 
+
 // creamos la aplacacion de express
 const app = express();
 
@@ -55,6 +56,6 @@ const PORT = process.env.PORT || 3000;
      conectaDB(); // Llama a la función para ver el mensaje en consola al iniciar
     console.log(`Servidor escuchando en el puerto ${PORT}`); // Corregido a backticks ``
     console.log(`http://localhost:${PORT}`);
-    console.log(` Servidor corriendo en http://localhost:${PORT}`);
+  
 
  });
