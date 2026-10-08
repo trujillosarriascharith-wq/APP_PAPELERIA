@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { supabase } from "../config/supabase.js";
 import { crearUsuario, obtenerPorEmail } from "../models/user.js";
 import { enviarCodigoVerificacion } from "../services/emailService.js";
+import { subirFoto } from "../utils/subirFoto.js";
 
 //registro
 export const registro = async (req, res) => {
@@ -31,6 +32,16 @@ export const registro = async (req, res) => {
 
         const hashedpassword = await bcrypt.hash(password, 10);
 
+     //subir la foto (si el usuario eligió una)
+        let fotoUrl = null;
+        if (req.file) {
+            try {
+                fotoUrl = await subirFoto(req.file.buffer);
+            } catch (e) {
+                console.error("Error subiendo foto", e);
+                return res.status(500).json({ error: 'No se pudo subir la foto' });
+            }
+        }
 
         //4.crear la constante para  rol por defecto
         const rolPorDefecto = 'usuario';
@@ -49,7 +60,9 @@ export const registro = async (req, res) => {
             hashedpassword,
             rolPorDefecto,
             codigoVerificacion,
-            codigoVerificacionExpiracion
+            codigoVerificacionExpiracion,
+            fotoUrl
+            
         );
         if (error) {
             return res.status(500).json({
@@ -69,7 +82,8 @@ export const registro = async (req, res) => {
             telefono: usuarioCreado.telefono,
             direccion: usuarioCreado.direccion,
             email: usuarioCreado.email,
-            rol: usuarioCreado.rol
+            rol: usuarioCreado.rol,
+            foto: usuarioCreado.foto
         };
 
         //9.Si Breve fallo, el usuario ya quedo creado , pero avisamos que el correo no llego 
@@ -99,14 +113,7 @@ export const registro = async (req, res) => {
 };
 
 
-//       }catch(error){
-//         console.error("error en el registro", error);
-//         return res.status(500).json({
-//             error: error.message
-//         });
 
-//     }
-// };
 
 //crear el LOGIN
 export const login = async (req, res) => {
@@ -176,7 +183,8 @@ export const login = async (req, res) => {
                 telefono: usuarios.telefono,
                 direccion: usuarios.direccion,
                 email: usuarios.email,
-                rol: usuarios.rol
+                rol: usuarios.rol,
+                foto: usuarios.foto || usuarios.avatar || null
             }
         });
 

@@ -3,14 +3,14 @@ import { supabase } from "../config/supabase.js";
 
 
 //crear el usuario
-export const crearUsuario = async (nombre, telefono,  email, direccion, password, rol,codigoVerificacion, codigoVerificacionExpiracion) => {
+export const crearUsuario = async (nombre, telefono, email, direccion, password, rol, codigoVerificacion, codigoVerificacionExpiracion, foto = null) => {
     const { data, error } = await supabase
         .from('usuarios')
-        .insert({nombre, telefono, email, direccion, password , rol: rol || 'usuario', isVerified: false, codigoVerificacion, codigoVerificacionExpiracion}) 
-        .select('id_usuario ,nombre,telefono, email, direccion, password ,rol')
-      
-        return {data, error};
-    };
+        .insert({ nombre, telefono, email, direccion, password, rol: rol || 'usuario', isVerified: false, codigoVerificacion, codigoVerificacionExpiracion, foto })
+        .select('id_usuario, nombre, telefono, email, direccion, rol, foto');
+
+    return { data, error };
+};
 
     
     //obtener usuarios
@@ -45,15 +45,7 @@ export const obtenerUsuarioPorId = async (id_usuario) => {
     return { data, error};
 };
 
-// //actualizar un usuario
-// export const actualizarUsuario = async (id_usuario,campos) => {
-//     const {data,error} = await supabase
-//      .from('usuarios')
-//      .update(campos)
-//       .eq ('id_usuario', id_usuario)
-//     .select('id_usuario , nombre,telefono,direccion, password, email, rol');
-//       return{data,error};
-// };
+
 
 // 3. Actualizar campos de vinculación
 export const actualizarUsuario = async (id_usuario, campos) => {
