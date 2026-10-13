@@ -11,6 +11,7 @@ import categoriasRoutes from "./routes/categorias.js";
 import pagosRoutes from "./routes/pagos.js"
 import chatRoutes from "./routes/chatRoutes.js"; // Importa las rutas de chat
 import notificacionesRoutes from "./routes/notificaciones.js";
+import perfilRoutes from "./routes/perfil.js";
 //cargar la variable 
 dotenv.config();
 conectaDB();
@@ -44,6 +45,7 @@ app.use("/api/categorias", categoriasRoutes);
 app.use("/api/pagos", pagosRoutes);
 app.use("/api/chat", chatRoutes); // Agrega las rutas de chat
 app.use('/api/notificaciones',notificacionesRoutes);
+app.use('/api/perfil', perfilRoutes);
 
 
 //configuramos el puerto 
