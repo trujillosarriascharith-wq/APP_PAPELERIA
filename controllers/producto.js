@@ -139,19 +139,48 @@ export const actualizar = async (req, res) => {
     }
 };
 
-// Eliminar producto
+// // Eliminar producto
+// export const eliminar = async (req, res) => {
+//     try {
+//         const { id } = req.params;
+//         const { error } = await eliminarProducto(id);
+//         if (error) {
+//             return res.status(500).json({
+//                 error: 'Error al eliminar el producto'
+//             });
+//         }
+//         return res.status(200).json({
+//             message: 'Producto eliminado exitosamente'
+//         });
+//     } catch (error) {
+//         console.error('Error en eliminar producto:', error);
+//         res.status(500).json({
+//             error: 'Error en el servidor',
+//             detalle: error.message
+//         });
+//     }
+// };
+// Eliminar producto definitivamente (la BD borra en cascada sus carritos/pedidos)
 export const eliminar = async (req, res) => {
     try {
         const { id } = req.params;
-        const { error } = await eliminarProducto(id);
+        const { data, error } = await eliminarProducto(id);
+
         if (error) {
+            console.error('Error de Supabase al eliminar:', error);
             return res.status(500).json({
-                error: 'Error al eliminar el producto'
+                error: 'Error al eliminar el producto',
+                detalle: error.message,
+                codigo: error.code
             });
         }
-        return res.status(200).json({
-            message: 'Producto eliminado exitosamente'
-        });
+
+        // Si no se borró ninguna fila, el producto no existe (o ya fue borrado)
+        if (!data || data.length === 0) {
+            return res.status(404).json({ error: 'Producto no encontrado' });
+        }
+
+        return res.status(200).json({ message: 'Producto eliminado exitosamente' });
     } catch (error) {
         console.error('Error en eliminar producto:', error);
         res.status(500).json({

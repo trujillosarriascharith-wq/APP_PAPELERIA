@@ -3,16 +3,45 @@ import { obtenerCarritoConProductosParaPedido, vaciarCarritoPorUsuario } from '.
 import { obtenerUsuarioPorId } from '../models/user.js';
 import { enviarConfirmacionPedido } from '../utils/sendEmail.js';
 
+// export const crearPedidoConDetalles = async (req, res) => {
+//   try {
+//     const { id_usuario, direccion, telefono, detalles } = req.body;
+//     if (!id_usuario ||!detalles || detalles.length === 0) return res.status(400).json({ error: 'Datos incompletos' });
+//     let total = 0; detalles.forEach(d => { total += Number(d.subtotal || d.total_parcial); });
+//     const { data: pedido, error: errorPedido } = await crearPedido({ id_usuario, direccion, telefono, total, estado: 'pendiente', fecha: new Date() });
+//     if (errorPedido) return res.status(500).json({ error: errorPedido });
+//     const id_pedido_creado = pedido[0].id_pedido;
+//     for (let d of detalles) {
+//       await crearDetallePedido({ id_pedido: id_pedido_creado, id_producto: d.id_producto, cantidad: d.cantidad, precio: d.precio_unitario || d.precio, total_parcial: d.subtotal || d.total_parcial });
+//     }
+//     return res.status(201).json({ message: 'Pedido creado', pedido: pedido[0] });
+//   } catch (error) { return res.status(500).json({ error: error.message }); }
+// };
 export const crearPedidoConDetalles = async (req, res) => {
   try {
-    const { id_usuario, direccion, telefono, detalles } = req.body;
-    if (!id_usuario ||!detalles || detalles.length === 0) return res.status(400).json({ error: 'Datos incompletos' });
-    let total = 0; detalles.forEach(d => { total += Number(d.subtotal || d.total_parcial); });
+    // El id del usuario viene del token, no del body
+    const id_usuario = req.usuario?.id_usuario ?? req.usuario?.id;
+    const { direccion, telefono, detalles } = req.body;
+
+    if (!id_usuario) return res.status(401).json({ error: 'No se pudo identificar al usuario' });
+    if (!detalles || detalles.length === 0) return res.status(400).json({ error: 'Datos incompletos' });
+
+    let total = 0;
+    detalles.forEach(d => { total += Number(d.subtotal || d.total_parcial); });
+
     const { data: pedido, error: errorPedido } = await crearPedido({ id_usuario, direccion, telefono, total, estado: 'pendiente', fecha: new Date() });
-    if (errorPedido) return res.status(500).json({ error: errorPedido });
+    if (errorPedido) return res.status(500).json({ error: errorPedido.message });
+
     const id_pedido_creado = pedido[0].id_pedido;
     for (let d of detalles) {
-      await crearDetallePedido({ id_pedido: id_pedido_creado, id_producto: d.id_producto, cantidad: d.cantidad, precio: d.precio_unitario || d.precio, total_parcial: d.subtotal || d.total_parcial });
+      const { error: errorDetalle } = await crearDetallePedido({
+        id_pedido: id_pedido_creado,
+        id_producto: d.id_producto,
+        cantidad: d.cantidad,
+        precio: d.precio_unitario || d.precio,
+        total_parcial: d.subtotal || d.total_parcial
+      });
+      if (errorDetalle) return res.status(500).json({ error: errorDetalle.message });
     }
     return res.status(201).json({ message: 'Pedido creado', pedido: pedido[0] });
   } catch (error) { return res.status(500).json({ error: error.message }); }
