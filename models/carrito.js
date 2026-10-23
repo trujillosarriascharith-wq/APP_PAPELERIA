@@ -30,12 +30,23 @@ export const obtenerOCrearCarrito = async (id_usuario) => {
     return { data: data[0], error: null };
 };
 
-// Obtener el detalle (items) de un carrito
+// Obtener el detalle (items) de un carrito, con los datos de cada producto
 export const obtenerDetalleCarrito = async (id_carrito) => {
     const {data, error} = await supabase
    .from('detalle_carrito')
-   .select('id_detalle_carrito, id_carrito, id_producto, cantidad')
-   .eq('id_carrito', id_carrito);
+   .select('id_detalle_carrito, id_carrito, id_producto, cantidad, seleccionado, productos(nombre, descripcion, precio, imagen, cantidad_stock, estado)')
+   .eq('id_carrito', id_carrito)
+   .order('id_detalle_carrito', { ascending: true });
+    return {data, error};
+};
+
+// Un item del carrito por su id, con el producto (para validar stock y dueño)
+export const obtenerDetalleConProducto = async (id_detalle_carrito) => {
+    const {data, error} = await supabase
+   .from('detalle_carrito')
+   .select('id_detalle_carrito, id_carrito, id_producto, cantidad, productos(nombre, cantidad_stock)')
+   .eq('id_detalle_carrito', id_detalle_carrito)
+   .maybeSingle();
     return {data, error};
 };
 
@@ -53,7 +64,7 @@ export const agregarDetalleCarrito = async (id_carrito, id_producto, cantidad) =
     const {data, error} = await supabase
    .from('detalle_carrito')
    .insert({ id_carrito, id_producto, cantidad })
-   .select('id_detalle_carrito, id_carrito, id_producto, cantidad');
+   .select('id_detalle_carrito, id_carrito, id_producto, cantidad, seleccionado');
     return {data, error};
 };
 
@@ -62,7 +73,17 @@ export const actualizarCantidadDetalle = async (id_detalle_carrito, cantidad) =>
    .from('detalle_carrito')
    .update({ cantidad })
    .eq('id_detalle_carrito', id_detalle_carrito)
-   .select('id_detalle_carrito, id_carrito, id_producto, cantidad');
+   .select('id_detalle_carrito, id_carrito, id_producto, cantidad, seleccionado');
+    return {data, error};
+};
+
+// Actualiza varios campos de un item a la vez (cantidad y/o seleccionado)
+export const actualizarDetalle = async (id_detalle_carrito, campos) => {
+    const {data, error} = await supabase
+   .from('detalle_carrito')
+   .update(campos)
+   .eq('id_detalle_carrito', id_detalle_carrito)
+   .select('id_detalle_carrito, id_carrito, id_producto, cantidad, seleccionado');
     return {data, error};
 };
 
@@ -81,10 +102,22 @@ export const vaciarCarritoPorUsuario = async (id_usuario) => {
   return {data, error};
 };
 
+// Quita del carrito del usuario solo los productos indicados (los que ya compró)
+export const quitarProductosDelCarrito = async (id_usuario, ids_producto) => {
+  if (!ids_producto || ids_producto.length === 0) return { data: null, error: null };
+  const { data: carrito } = await obtenerCarritoPorUsuario(id_usuario);
+  if (!carrito) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from('detalle_carrito')
+    .delete()
+    .eq('id_carrito', carrito.id_carrito)
+    .in('id_producto', ids_producto);
+  return { data, error };
+};
+
 export const vaciar = vaciarCarritoPorUsuario;
 export const obtenerCarrito = obtenerCarritoPorUsuario;
 
-// ESTA ES LA UNICA QUE CAMBIA - AHORA SIN.single() EN DETALLE
 export const obtenerCarritoConProductosParaPedido = async (id_usuario) => {
   const { data: carrito, error: errorCarrito } = await supabase
    .from('carrito')

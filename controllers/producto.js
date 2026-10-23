@@ -160,11 +160,10 @@ export const actualizar = async (req, res) => {
 //         });
 //     }
 // };
-// Eliminar producto definitivamente (la BD borra en cascada sus carritos/pedidos)
 export const eliminar = async (req, res) => {
     try {
         const { id } = req.params;
-        const { data, error } = await eliminarProducto(id);
+        const { error } = await eliminarProducto(id);
 
         if (error) {
             console.error('Error de Supabase al eliminar:', error);
@@ -173,11 +172,6 @@ export const eliminar = async (req, res) => {
                 detalle: error.message,
                 codigo: error.code
             });
-        }
-
-        // Si no se borró ninguna fila, el producto no existe (o ya fue borrado)
-        if (!data || data.length === 0) {
-            return res.status(404).json({ error: 'Producto no encontrado' });
         }
 
         return res.status(200).json({ message: 'Producto eliminado exitosamente' });

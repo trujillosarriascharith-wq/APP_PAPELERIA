@@ -1,10 +1,44 @@
-import { crearCategoria, obtenerCategorias, obtenerCategoriaPorId, actualizarCategoria, eliminarCategoria } from '../models/categorias.js';
-
+import { crearCategoria, buscarCategoriaPorNombre, obtenerCategorias, obtenerCategoriaPorId, actualizarCategoria, eliminarCategoria } from '../models/categorias.js';
+import { subirFoto } from '../utils/subirFoto.js';
 // Crear categoria
+// export const crear = async (req, res) => {
+//     try {
+//         console.log("📥 Datos recibidos en CREAR CATEGORIA:", req.body);
+//         const { nombre, descripcion, imagen } = req.body;
+
+//         if (!nombre) {
+//             return res.status(400).json({
+//                 error: 'El nombre de la categoria es requerido'
+//             });
+//         }
+
+//         const { data, error } = await crearCategoria(nombre, descripcion, imagen);
+//        if (error) {
+//   console.log(error); // <--- AGREGA ESTO
+//   return res.status(500).json({
+//     error: 'Error al crear la categoria',
+//     detalle: error.message // <--- Y ESTO
+//   });
+// }
+
+//         return res.status(201).json({
+//             message: 'Categoria creada exitosamente',
+//             categoria: data[0]
+//         });
+//     } catch (error) {
+//         console.error('Error en crear categoria:', error);
+//         res.status(500).json({
+//             error: 'Error en el servidor',
+//             detalle: error.message
+//         });
+//     }
+// };
+// Crear categoria (la foto llega en el campo "imagen")
 export const crear = async (req, res) => {
     try {
         console.log("📥 Datos recibidos en CREAR CATEGORIA:", req.body);
-        const { nombre, descripcion, imagen } = req.body;
+        const nombre = (req.body.nombre || '').trim();
+        const descripcion = (req.body.descripcion || '').trim();
 
         if (!nombre) {
             return res.status(400).json({
@@ -12,14 +46,28 @@ export const crear = async (req, res) => {
             });
         }
 
+        // Evita categorias repetidas
+        const { data: existentes } = await buscarCategoriaPorNombre(nombre);
+        if (existentes && existentes.length > 0) {
+            return res.status(409).json({
+                error: 'Ya existe una categoria con ese nombre'
+            });
+        }
+
+        // Si llega un archivo se sube a Cloudinary; si no, se acepta una URL
+        let imagen = req.body.imagen || null;
+        if (req.file) {
+            imagen = await subirFoto(req.file.buffer, 'papeleria/categorias');
+        }
+
         const { data, error } = await crearCategoria(nombre, descripcion, imagen);
-       if (error) {
-  console.log(error); // <--- AGREGA ESTO
-  return res.status(500).json({
-    error: 'Error al crear la categoria',
-    detalle: error.message // <--- Y ESTO
-  });
-}
+        if (error) {
+            console.log(error);
+            return res.status(500).json({
+                error: 'Error al crear la categoria',
+                detalle: error.message
+            });
+        }
 
         return res.status(201).json({
             message: 'Categoria creada exitosamente',
