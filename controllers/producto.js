@@ -1,4 +1,3 @@
-
 import {
     crearProducto,
     obtenerProductos,
@@ -11,6 +10,16 @@ import { subirFoto } from '../utils/subirFoto.js';
 
 // Con multipart todo llega como texto: pasa a número, o undefined si no vino
 const aNumero = (v) => (v === undefined || v === '' ? undefined : Number(v));
+
+// Mantiene el estado de acuerdo con el stock:
+// sin unidades -> 'agotado'; con unidades vuelve a 'activo'. 'inactivo' no se toca.
+const ajustarEstado = (estado, stock) => {
+    const actual = String(estado ?? 'activo').toLowerCase();
+    if (stock === undefined || actual === 'inactivo') return estado;
+    if (stock <= 0 && actual === 'activo') return 'agotado';
+    if (stock > 0 && actual === 'agotado') return 'activo';
+    return estado;
+};
 
 // Crear producto (la foto llega en el campo "imagen")
 export const crear = async (req, res) => {
@@ -36,7 +45,8 @@ export const crear = async (req, res) => {
         }
 
         const { data, error } = await crearProducto(
-            Number(id_categoria), nombre, descripcion, precio, cantidad_stock, imagen, estado
+            Number(id_categoria), nombre, descripcion, precio, cantidad_stock, imagen,
+            ajustarEstado(estado, cantidad_stock)
         );
         if (error) {
             console.log(error);
@@ -120,6 +130,17 @@ export const actualizar = async (req, res) => {
             campos.imagen = await subirFoto(req.file.buffer, 'papeleria/productos');
         }
 
+        // Si cambia el stock, el estado se ajusta solo (0 = agotado, más de 0 = activo)
+        if (campos.cantidad_stock !== undefined) {
+            let estadoActual = campos.estado;
+            if (estadoActual === undefined) {
+                const { data: actual } = await obtenerProductoPorId(id);
+                estadoActual = actual?.estado;
+            }
+            const nuevoEstado = ajustarEstado(estadoActual, campos.cantidad_stock);
+            if (nuevoEstado !== undefined) campos.estado = nuevoEstado;
+        }
+
         const { data, error } = await actualizarProducto(id, campos);
         if (error) {
             return res.status(500).json({
@@ -139,27 +160,7 @@ export const actualizar = async (req, res) => {
     }
 };
 
-// // Eliminar producto
-// export const eliminar = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-//         const { error } = await eliminarProducto(id);
-//         if (error) {
-//             return res.status(500).json({
-//                 error: 'Error al eliminar el producto'
-//             });
-//         }
-//         return res.status(200).json({
-//             message: 'Producto eliminado exitosamente'
-//         });
-//     } catch (error) {
-//         console.error('Error en eliminar producto:', error);
-//         res.status(500).json({
-//             error: 'Error en el servidor',
-//             detalle: error.message
-//         });
-//     }
-// };
+
 export const eliminar = async (req, res) => {
     try {
         const { id } = req.params;
