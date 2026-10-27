@@ -34,6 +34,10 @@ app.get('/',(req,res) =>{
         version:"1.0.0"
     });
 });
+//montando las rutas de la API
+app.get('/health', (req,res) =>{
+    res.status(200).send('ok');
+});
 
 //ruta de autenticacion
 app.use('/Auth', AuthRoutes);
