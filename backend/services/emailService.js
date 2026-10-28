@@ -2,7 +2,6 @@ import { BrevoClient } from '@getbrevo/brevo';
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    // 1. Instanciar el cliente dentro de la funcion para asegurar la lectura del .env
     const brevo = new BrevoClient({
       apiKey: process.env.BREVO_API_KEY
     });
@@ -40,10 +39,14 @@ export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codi
       `
     });
 
-    console.log('Correo enviado con exito');
+    console.log('Correo enviado con exito a', emailDestino);
     return { exito: true, result };
   } catch (error) {
-    console.error('Error enviando correo con Brevo:', error);
+    console.error(
+      'Error enviando correo con Brevo:',
+      error?.statusCode || '',
+      error?.body || error?.message || error
+    );
     return { exito: false, error };
   }
 };
