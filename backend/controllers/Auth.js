@@ -83,8 +83,16 @@ export const registro = async (req, res) => {
                 console.error("No se pudo borrar el usuario tras fallar el correo", errorBorrar);
             }
 
+            // TEMPORAL (depuración): muestra el motivo real del fallo de Brevo.
+            // Quitar el detalle cuando se arregle el problema.
+            const errBrevo = resultadoEnvio?.error;
+            const detalle = errBrevo?.body
+                ? JSON.stringify(errBrevo.body)
+                : errBrevo?.message || 'sin detalle';
+
             return res.status(500).json({
-                error: 'No pudimos enviar el código de verificación a tu correo. Intenta registrarte de nuevo en unos minutos.',
+                error: 'No pudimos enviar el código. Detalle: ' +
+                    (errBrevo?.statusCode || '') + ' ' + detalle,
                 emailEnviado: false
             });
         }
