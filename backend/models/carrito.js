@@ -30,13 +30,31 @@ export const obtenerOCrearCarrito = async (id_usuario) => {
     return { data: data[0], error: null };
 };
 
-// Obtener el detalle (items) de un carrito
+// Obtener el detalle (items) de un carrito, CON los datos de cada producto
+// dentro del campo "productos" (es lo que espera la app Flutter)
 export const obtenerDetalleCarrito = async (id_carrito) => {
-    const {data, error} = await supabase
+    const { data: detalles, error } = await supabase
    .from('detalle_carrito')
-   .select('id_detalle_carrito, id_carrito, id_producto, cantidad')
-   .eq('id_carrito', id_carrito);
-    return {data, error};
+   .select('*')
+   .eq('id_carrito', id_carrito)
+   .order('id_detalle_carrito', { ascending: true });
+
+    if (error) return { data: null, error };
+    if (!detalles || detalles.length === 0) return { data: [], error: null };
+
+    const ids = detalles.map(d => d.id_producto);
+    const { data: productos, error: errorProd } = await supabase
+   .from('productos')
+   .select('id_producto, nombre, descripcion, precio, cantidad_stock, imagen, estado')
+   .in('id_producto', ids);
+
+    if (errorProd) return { data: null, error: errorProd };
+
+    const data = detalles.map(d => ({
+        ...d,
+        productos: productos.find(p => p.id_producto === d.id_producto) || null,
+    }));
+    return { data, error: null };
 };
 
 export const obtenerDetalleCarritoPorProducto = async (id_carrito, id_producto) => {
@@ -62,7 +80,17 @@ export const actualizarCantidadDetalle = async (id_detalle_carrito, cantidad) =>
    .from('detalle_carrito')
    .update({ cantidad })
    .eq('id_detalle_carrito', id_detalle_carrito)
-   .select('id_detalle_carrito, id_carrito, id_producto, cantidad');
+   .select('*');
+    return {data, error};
+};
+
+// Actualiza varios campos a la vez (cantidad y/o seleccionado)
+export const actualizarDetalle = async (id_detalle_carrito, campos) => {
+    const {data, error} = await supabase
+   .from('detalle_carrito')
+   .update(campos)
+   .eq('id_detalle_carrito', id_detalle_carrito)
+   .select('*');
     return {data, error};
 };
 
@@ -84,7 +112,6 @@ export const vaciarCarritoPorUsuario = async (id_usuario) => {
 export const vaciar = vaciarCarritoPorUsuario;
 export const obtenerCarrito = obtenerCarritoPorUsuario;
 
-// ESTA ES LA UNICA QUE CAMBIA - AHORA SIN.single() EN DETALLE
 export const obtenerCarritoConProductosParaPedido = async (id_usuario) => {
   const { data: carrito, error: errorCarrito } = await supabase
    .from('carrito')
