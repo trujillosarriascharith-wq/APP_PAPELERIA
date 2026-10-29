@@ -269,7 +269,8 @@ export const crearPedidoConDetalles = async (req, res) => {
       const precio = Number(prod.precio);
       const subtotal = precio * cantidad;
       total += subtotal;
-      lineas.push({ id_producto, cantidad, precio, total_parcial: subtotal });
+      // La tabla detalle_pedido usa la columna "subtotal"
+      lineas.push({ id_producto, cantidad, precio, subtotal });
       resumen.push({ nombre: prod.nombre, cantidad });
     }
 
@@ -360,7 +361,7 @@ export const crearPedidoDesdeCarrito = async (req, res) => {
         id_producto: item.id_producto,
         cantidad: item.cantidad,
         precio: item.producto.precio,
-        total_parcial: Number(item.producto.precio) * Number(item.cantidad),
+        subtotal: Number(item.producto.precio) * Number(item.cantidad),
       });
     }
     await despues('vaciar carrito', () => vaciarCarritoPorUsuario(id_usuario));
@@ -387,11 +388,12 @@ export const obtenerPedidoUsuario = async (req, res) => {
   } catch (error) { return res.status(500).json({ error: error.message }); }
 };
 
+// Los pedidos del usuario que inició sesión (el id sale del token)
 export const misPedidos = async (req, res) => {
   try {
-    const { id_usuario } = req.query;
-    if (!id_usuario) return res.status(400).json({ error: 'id_usuario requerido' });
+    const id_usuario = idDelToken(req);
     const { data, error } = await obtenerPedidosPorUsuario(id_usuario);
+    if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   } catch (error) { return res.status(500).json({ error: error.message }); }
 };
