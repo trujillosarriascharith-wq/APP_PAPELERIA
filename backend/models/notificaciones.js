@@ -1,11 +1,20 @@
 import { supabase } from "../config/supabase.js";
 
-// Crear una notificación para un usuario
-export const crearNotificacion = async (id_usuario, mensaje) => {
+const COLUMNAS = 'id_notificacion, id_usuario, mensaje, leida, fecha, imagen, id_comprobante';
+// Incluye el estado del comprobante para mostrar (o esconder) los botones
+const COLUMNAS_CON_ESTADO = `${COLUMNAS}, comprobantes(estado)`;
+
+// Crear una notificación para un usuario.
+// extra: { imagen, id_comprobante } (opcional, para notificaciones de pago)
+export const crearNotificacion = async (id_usuario, mensaje, extra = {}) => {
+    const fila = { id_usuario, mensaje };
+    if (extra.imagen) fila.imagen = extra.imagen;
+    if (extra.id_comprobante) fila.id_comprobante = extra.id_comprobante;
+
     const { data, error } = await supabase
         .from('notificaciones')
-        .insert({ id_usuario, mensaje })
-        .select('id_notificacion, id_usuario, mensaje, leida, fecha');
+        .insert(fila)
+        .select(COLUMNAS);
     return { data, error };
 };
 
@@ -13,7 +22,7 @@ export const crearNotificacion = async (id_usuario, mensaje) => {
 export const obtenerNotificaciones = async () => {
     const { data, error } = await supabase
         .from('notificaciones')
-        .select('id_notificacion, id_usuario, mensaje, leida, fecha')
+        .select(COLUMNAS_CON_ESTADO)
         .order('fecha', { ascending: false });
     return { data, error };
 };
@@ -22,7 +31,7 @@ export const obtenerNotificaciones = async () => {
 export const obtenerNotificacionesPorUsuario = async (id_usuario) => {
     const { data, error } = await supabase
         .from('notificaciones')
-        .select('id_notificacion, id_usuario, mensaje, leida, fecha')
+        .select(COLUMNAS_CON_ESTADO)
         .eq('id_usuario', id_usuario)
         .order('fecha', { ascending: false });
     return { data, error };
@@ -32,7 +41,7 @@ export const obtenerNotificacionesPorUsuario = async (id_usuario) => {
 export const obtenerNotificacionPorId = async (id_notificacion) => {
     const { data, error } = await supabase
         .from('notificaciones')
-        .select('id_notificacion, id_usuario, mensaje, leida, fecha')
+        .select(COLUMNAS_CON_ESTADO)
         .eq('id_notificacion', id_notificacion)
         .single();
     return { data, error };
@@ -44,7 +53,7 @@ export const marcarNotificacionLeida = async (id_notificacion) => {
         .from('notificaciones')
         .update({ leida: true })
         .eq('id_notificacion', id_notificacion)
-        .select('id_notificacion, id_usuario, mensaje, leida, fecha');
+        .select(COLUMNAS);
     return { data, error };
 };
 

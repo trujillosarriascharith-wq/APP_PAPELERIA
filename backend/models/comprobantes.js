@@ -1,11 +1,11 @@
 import { supabase } from '../config/supabase.js';
 
-const COLUMNAS = 'id_comprobante, id_usuario, id_pedido, imagen, estado, usado, fecha, fecha_validacion, validado_por';
+const COLUMNAS = 'id_comprobante, id_usuario, id_pedido, imagen, estado, usado, fecha, fecha_validacion, validado_por, datos';
 
-export const crearComprobante = async ({ id_usuario, imagen }) => {
+export const crearComprobante = async ({ id_usuario, imagen, datos = null }) => {
     const { data, error } = await supabase
         .from('comprobantes')
-        .insert([{ id_usuario, imagen, estado: 'pendiente', usado: false, fecha: new Date().toISOString() }])
+        .insert([{ id_usuario, imagen, datos, estado: 'pendiente', usado: false, fecha: new Date().toISOString() }])
         .select(COLUMNAS);
     return { data, error };
 };
