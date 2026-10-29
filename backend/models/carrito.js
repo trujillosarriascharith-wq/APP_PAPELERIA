@@ -147,3 +147,14 @@ export const obtenerCarritoConProductosParaPedido = async (id_usuario) => {
 };
 
 export const obtenerCarritoParaPedido = obtenerCarritoConProductosParaPedido;
+// Quita del carrito guardado solo los productos que se acaban de pedir
+export const quitarProductosDelCarrito = async (id_usuario, ids_producto) => {
+  const { data: carrito } = await supabase
+    .from('carrito').select('id_carrito').eq('id_usuario', id_usuario).maybeSingle();
+  if (!carrito) return { data: null, error: null };
+  const { data, error } = await supabase
+    .from('detalle_carrito').delete()
+    .eq('id_carrito', carrito.id_carrito)
+    .in('id_producto', ids_producto);
+  return { data, error };
+};

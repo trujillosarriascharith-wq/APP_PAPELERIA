@@ -73,3 +73,11 @@ export const eliminarPedido = async (id_pedido) => {
   const { data, error } = await supabase.from('pedido').delete().eq('id_pedido', id_pedido).select();
   return { data, error };
 };
+// Precios reales de los productos del pedido
+export const obtenerProductosPorIds = async (ids) => {
+  const { data, error } = await supabase
+    .from('productos')
+    .select('id_producto, nombre, precio')
+    .in('id_producto', ids);
+  return { data, error };
+};
