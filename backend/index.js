@@ -12,6 +12,7 @@ import pagosRoutes from "./routes/pagos.js"
 import chatRoutes from "./routes/chatRoutes.js"; // Importa las rutas de chat
 import notificacionesRoutes from "./routes/notificaciones.js";
 import perfilRoutes from "./routes/perfil.js";
+import comprobantesRoutes from "./routes/comprobantes.js";
 //cargar la variable 
 dotenv.config();
 conectaDB();
@@ -47,6 +48,7 @@ app.use('/api/pedidos', pedidoRoutes);
 app.use('/api/carrito', carritoRoutes);
 app.use("/api/categorias", categoriasRoutes);
 app.use("/api/pagos", pagosRoutes);
+app.use("/api/comprobantes", comprobantesRoutes);
 app.use("/api/chat", chatRoutes); // Agrega las rutas de chat
 app.use('/api/notificaciones',notificacionesRoutes);
 app.use('/api/perfil', perfilRoutes);
