@@ -6,7 +6,7 @@ import {
     actualizarEstadoComprobante,
 } from '../models/comprobantes.js';
 import { subirFoto } from '../utils/subirFoto.js';
-import { notificar } from '../utils/notificar.js';
+import { notificar, notificarAdmins } from '../utils/notificar.js'; //[cite: 1, 2]
 
 const CARPETA_COMPROBANTES = 'papeleria/comprobantes';
 const idDelToken = (req) => req.usuario.id_usuario || req.usuario.id;
@@ -25,6 +25,10 @@ export const subir = async (req, res) => {
             console.log(error);
             return res.status(500).json({ error: 'Error al guardar el comprobante', detalle: error.message });
         }
+
+        // Notificar a los administradores sobre el nuevo comprobante pendiente
+        notificarAdmins(`Nuevo comprobante de pago #${data[0].id_comprobante} pendiente de validar.`); //[cite: 1, 2]
+
         return res.status(201).json({ message: 'Comprobante enviado', comprobante: data[0] });
     } catch (error) {
         console.error('Error en subir comprobante:', error);
