@@ -9,11 +9,11 @@ export const crearPedido = async ({ id_usuario, direccion, telefono, total, esta
   return { data, error };
 };
 
-// Crear detalle del pedido
-export const crearDetallePedido = async ({ id_pedido, id_producto, cantidad, precio, total_parcial }) => {
+// Crear detalle del pedido (la tabla detalle_pedido usa la columna "subtotal")
+export const crearDetallePedido = async ({ id_pedido, id_producto, cantidad, precio, subtotal }) => {
   const { data, error } = await supabase
     .from('detalle_pedido')
-    .insert([{ id_pedido, id_producto, cantidad, precio, total_parcial }])
+    .insert([{ id_pedido, id_producto, cantidad, precio, subtotal }])
     .select();
   return { data, error };
 };
@@ -49,22 +49,20 @@ export const obtenerPedidosPorUsuario = async (id_usuario) => {
   return { data, error };
 };
 
-// --- ESTOS 3 SON LOS QUE TE FALTABAN Y POR ESO CRASHEABA ---
-
 export const obtenerTodosLosPedidos = async () => {
   const { data, error } = await supabase
-   .from('pedido')
-   .select('*')
-   .order('id_pedido', { ascending: false });
+    .from('pedido')
+    .select('*')
+    .order('id_pedido', { ascending: false });
   return { data, error };
 };
 
 export const actualizarEstadoPedido = async (id_pedido, nuevoEstado) => {
   const { data, error } = await supabase
-   .from('pedido')
-   .update({ estado: nuevoEstado })
-   .eq('id_pedido', id_pedido)
-   .select();
+    .from('pedido')
+    .update({ estado: nuevoEstado })
+    .eq('id_pedido', id_pedido)
+    .select();
   return { data, error };
 };
 
@@ -73,6 +71,7 @@ export const eliminarPedido = async (id_pedido) => {
   const { data, error } = await supabase.from('pedido').delete().eq('id_pedido', id_pedido).select();
   return { data, error };
 };
+
 // Precios reales de los productos del pedido
 export const obtenerProductosPorIds = async (ids) => {
   const { data, error } = await supabase
