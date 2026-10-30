@@ -46,7 +46,7 @@ export const actualizarProducto = async (id, campos) => {
     return {data, error};
 };
 
-// Descontar stock de un producto (usado al confirmar un pedido)
+// Descontar stock de un producto (versión antigua, ya no se usa en pedidos)
 export const descontarStockProducto = async (id_producto, cantidad) => {
     const { data: producto, error: errorBusqueda } = await obtenerProductoPorId(id_producto);
     if (errorBusqueda) return { data: null, error: errorBusqueda };
@@ -62,6 +62,19 @@ export const descontarStockProducto = async (id_producto, cantidad) => {
     .eq('id_producto', id_producto)
     .select('id_producto, cantidad_stock');
     return {data, error};
+};
+
+// Descuenta el stock de TODO un pedido de forma atómica (todo o nada).
+// items = [{ id_producto, cantidad }]
+export const descontarStockPedido = async (items) => {
+    const { error } = await supabase.rpc('descontar_stock_pedido', { p_items: items });
+    return { error };
+};
+
+// Devuelve el stock de un pedido (si falla la creación o se cancela)
+export const devolverStockPedido = async (items) => {
+    const { error } = await supabase.rpc('devolver_stock_pedido', { p_items: items });
+    return { error };
 };
 
 // Eliminar un producto

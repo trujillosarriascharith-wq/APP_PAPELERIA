@@ -158,3 +158,12 @@ export const quitarProductosDelCarrito = async (id_usuario, ids_producto) => {
     .in('id_producto', ids_producto);
   return { data, error };
 };
+// Obtiene una línea del carrito por su id (para validar el stock al subir la cantidad)
+export const obtenerDetallePorId = async (id_detalle_carrito) => {
+    const { data, error } = await supabase
+        .from('detalle_carrito')
+        .select('id_detalle_carrito, id_carrito, id_producto, cantidad')
+        .eq('id_detalle_carrito', id_detalle_carrito)
+        .maybeSingle();
+    return { data, error };
+};

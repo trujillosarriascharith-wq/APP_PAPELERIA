@@ -2,12 +2,29 @@ import {
     obtenerOCrearCarrito,
     obtenerDetalleCarrito,
     obtenerDetalleCarritoPorProducto,
+    obtenerDetallePorId,
     agregarDetalleCarrito,
     actualizarCantidadDetalle,
     actualizarDetalle,
     eliminarDetalleCarrito,
     vaciarCarritoPorUsuario,
 } from '../models/carrito.js';
+import { obtenerProductoPorId } from '../models/producto.js';
+
+// Verifica que la cantidad total pedida no pase del stock real.
+// Devuelve null si todo está bien, o { status, error } si no.
+// Agregar al carrito NO descuenta stock: solo valida.
+const validarStock = async (id_producto, cantidadTotal) => {
+    const { data: prod, error } = await obtenerProductoPorId(id_producto);
+    if (error || !prod) return { status: 404, error: 'El producto ya no existe' };
+
+    const stock = Number(prod.cantidad_stock);
+    if (stock <= 0) return { status: 409, error: `${prod.nombre} está agotado` };
+    if (cantidadTotal > stock) {
+        return { status: 409, error: `Solo hay ${stock} disponibles de ${prod.nombre}` };
+    }
+    return null;
+};
 
 // Obtener el carrito del usuario autenticado con sus items
 export const obtenerMiCarrito = async (req, res) => {
@@ -67,10 +84,15 @@ export const agregarProducto = async (req, res) => {
 
         const { data: itemExistente } = await obtenerDetalleCarritoPorProducto(carrito.id_carrito, id_producto);
 
+        // Lo que ya tiene en el carrito + lo nuevo no puede pasar del stock
+        const totalDeseado = (itemExistente ? itemExistente.cantidad : 0) + cantidad;
+        const problema = await validarStock(id_producto, totalDeseado);
+        if (problema) return res.status(problema.status).json({ error: problema.error });
+
         if (itemExistente) {
             const { data, error } = await actualizarCantidadDetalle(
                 itemExistente.id_detalle_carrito,
-                itemExistente.cantidad + cantidad
+                totalDeseado
             );
             if (error) {
                 console.log(error);
@@ -121,6 +143,17 @@ export const actualizarCantidad = async (req, res) => {
                     error: 'La cantidad debe ser mayor a 0'
                 });
             }
+
+            // Solo se valida el stock cuando el usuario SUBE la cantidad
+            const { data: detalle } = await obtenerDetallePorId(id_detalle);
+            if (!detalle) {
+                return res.status(404).json({ error: 'El producto no está en tu carrito' });
+            }
+            if (Number(cantidad) > detalle.cantidad) {
+                const problema = await validarStock(detalle.id_producto, Number(cantidad));
+                if (problema) return res.status(problema.status).json({ error: problema.error });
+            }
+
             campos.cantidad = Number(cantidad);
         }
         if (seleccionado !== undefined) {
