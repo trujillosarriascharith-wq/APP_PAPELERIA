@@ -143,25 +143,24 @@ const transporter = nodemailer.createTransport({
     tls: { rejectUnauthorized: false }
 });
 
-// ESTO ES LO IMPORTANTE, TE DICE EL ERROR EN RENDER LOGS
 transporter.verify((error, success) => {
     if (error) {
-        console.error('❌ ERROR DE GMAIL - Revisa EMAIL_USER y EMAIL_PASS en Render:', error.message);
+        console.error('❌ ERROR DE GMAIL:', error.message);
+        console.error('Revisa que EMAIL_USER y EMAIL_PASS esten bien en Render Environment');
     } else {
-        console.log('✅ GMAIL LISTO - Servidor listo para enviar desde:', process.env.EMAIL_USER);
+        console.log('✅ GMAIL LISTO desde:', process.env.EMAIL_USER);
     }
 });
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    console.log(`-> Enviando VERIFICACION a ${emailDestino} con codigo ${codigo}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
       subject: `Codigo de verificacion - ${codigo}`,
-      html: `<h2>${codigo}</h2><p>Hola ${nombreDestino}</p>`
+      html: `<div style="font-family: Arial; text-align:center;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}</p></div>`
     });
-    console.log('✅ ENVIADO VERIFICACION:', info.messageId);
+    console.log('✅ VERIFICACION ENVIADA:', info.messageId);
     return { exito: true };
   } catch (error) {
     console.error('❌ FALLO VERIFICACION:', error);
@@ -171,14 +170,13 @@ export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codi
 
 export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    console.log(`-> Enviando RECUPERACION a ${emailDestino} con codigo ${codigo}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
       subject: `Recuperar contraseña - ${codigo}`,
-      html: `<h2>${codigo}</h2><p>Hola ${nombreDestino}</p>`
+      html: `<div style="font-family: Arial; text-align:center;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}</p></div>`
     });
-    console.log('✅ ENVIADO RECUPERACION:', info.messageId);
+    console.log('✅ RECUPERACION ENVIADA:', info.messageId);
     return { exito: true };
   } catch (error) {
     console.error('❌ FALLO RECUPERACION:', error);
