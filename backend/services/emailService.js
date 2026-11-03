@@ -85,47 +85,113 @@
 //         return { exito: false, error };
 //     }
 // };
+//2
+// import nodemailer from 'nodemailer';
+
+// const transporter = nodemailer.createTransport({
+//     host: 'smtp.gmail.com',
+//     port: 587,
+//     secure: false, // true para 465, false para 587
+//     auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS
+//     },
+//     tls: {
+//         ciphers: 'SSLv3'
+//     }
+// });
+
+// export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
+//   try {
+//     console.log('Intentando enviar a:', emailDestino, 'desde:', process.env.EMAIL_USER);
+   
+//     const info = await transporter.sendMail({
+//       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
+//       to: emailDestino,
+//       subject: `Codigo de verificacion - ${codigo} - Papeleria Juan Jose`,
+//       html: `
+//         <div style="font-family: Arial; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+//           <h2 style="color: #d81b60; text-align: center;">Papeleria Juan Jose</h2>
+//           <p>Hola <b>${nombreDestino}</b>, tu codigo es:</p>
+//           <div style="text-align: center; margin: 20px 0;">
+//             <span style="font-size: 35px; font-weight: bold; letter-spacing: 5px; color: #d81b60; background: #fdf2f4; padding: 10px 20px; border-radius: 8px;">
+//               ${codigo}
+//             </span>
+//           </div>
+//           <p style="font-size: 12px; color: #888;">Vence en 15 min.</p>
+//         </div>
+//       `
+//     });
+
+//     console.log('Correo enviado ID:', info.messageId);
+//     return { exito: true, messageId: info.messageId };
+//   } catch (error) {
+//     console.error('ERROR REAL DE GMAIL:', error);
+//     return { exito: false, error: error.message };
+//   }
+// };
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
-    secure: false, // true para 465, false para 587
+    secure: false,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
-    },
-    tls: {
-        ciphers: 'SSLv3'
     }
+});
+
+// Verifica conexión al iniciar
+transporter.verify((err, success) => {
+    if (err) console.error('Error transporter Gmail:', err);
+    else console.log('Gmail listo para enviar');
 });
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    console.log('Intentando enviar a:', emailDestino, 'desde:', process.env.EMAIL_USER);
-   
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
-      subject: `Codigo de verificacion - ${codigo} - Papeleria Juan Jose`,
+      subject: `Codigo de verificacion - ${codigo}`,
       html: `
-        <div style="font-family: Arial; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-          <h2 style="color: #d81b60; text-align: center;">Papeleria Juan Jose</h2>
-          <p>Hola <b>${nombreDestino}</b>, tu codigo es:</p>
-          <div style="text-align: center; margin: 20px 0;">
-            <span style="font-size: 35px; font-weight: bold; letter-spacing: 5px; color: #d81b60; background: #fdf2f4; padding: 10px 20px; border-radius: 8px;">
-              ${codigo}
-            </span>
+        <div style="font-family: Arial; max-width:500px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
+          <h2 style="color:#d81b60; text-align:center;">Papeleria Juan Jose</h2>
+          <p>Hola <b>${nombreDestino}</b>, tu codigo de verificacion es:</p>
+          <div style="text-align:center; margin:20px 0;">
+            <span style="font-size:35px; font-weight:bold; letter-spacing:5px; color:#d81b60; background:#fdf2f4; padding:10px 20px; border-radius:8px;">${codigo}</span>
           </div>
-          <p style="font-size: 12px; color: #888;">Vence en 15 min.</p>
-        </div>
-      `
+          <p style="font-size:12px; color:#888;">Vence en 15 minutos.</p>
+        </div>`
     });
-
-    console.log('Correo enviado ID:', info.messageId);
-    return { exito: true, messageId: info.messageId };
+    console.log('VERIFICACION ENVIADA a', emailDestino, info.messageId);
+    return { exito: true };
   } catch (error) {
-    console.error('ERROR REAL DE GMAIL:', error);
-    return { exito: false, error: error.message };
+    console.error('ERROR VERIFICACION:', error);
+    return { exito: false, error };
+  }
+};
+
+export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
+  try {
+    const info = await transporter.sendMail({
+      from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
+      to: emailDestino,
+      subject: `Recuperar contraseña - ${codigo}`,
+      html: `
+        <div style="font-family: Arial; max-width:500px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
+          <h2 style="color:#d81b60; text-align:center;">Recuperar Contraseña</h2>
+          <p>Hola <b>${nombreDestino}</b>, tu codigo para recuperar es:</p>
+          <div style="text-align:center; margin:20px 0;">
+            <span style="font-size:35px; font-weight:bold; letter-spacing:5px; color:#d81b60; background:#fdf2f4; padding:10px 20px; border-radius:8px;">${codigo}</span>
+          </div>
+          <p style="font-size:12px; color:#888;">Vence en 15 minutos. Si no fuiste tu, ignora este correo.</p>
+        </div>`
+    });
+    console.log('RECUPERACION ENVIADA a', emailDestino, info.messageId);
+    return { exito: true };
+  } catch (error) {
+    console.error('ERROR RECUPERACION:', error);
+    return { exito: false, error };
   }
 };
