@@ -134,19 +134,20 @@ import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465, // CAMBIADO DE 587 a 465
+    secure: true, // CAMBIADO a true
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: { rejectUnauthorized: false }
+    connectionTimeout: 10000, // 10 segundos
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
 });
 
 transporter.verify((error, success) => {
     if (error) {
         console.error('❌ ERROR DE GMAIL:', error.message);
-        console.error('Revisa que EMAIL_USER y EMAIL_PASS esten bien en Render Environment');
     } else {
         console.log('✅ GMAIL LISTO desde:', process.env.EMAIL_USER);
     }
@@ -154,32 +155,34 @@ transporter.verify((error, success) => {
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
   try {
+    console.log(`-> Enviando VERIFICACION a ${emailDestino}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
       subject: `Codigo de verificacion - ${codigo}`,
-      html: `<div style="font-family: Arial; text-align:center;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}</p></div>`
+      html: `<div style="font-family:Arial; text-align:center; padding:20px;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}, tu codigo vence en 15 min.</p></div>`
     });
     console.log('✅ VERIFICACION ENVIADA:', info.messageId);
     return { exito: true };
   } catch (error) {
-    console.error('❌ FALLO VERIFICACION:', error);
+    console.error('❌ FALLO VERIFICACION:', error.message);
     return { exito: false, error: error.message };
   }
 };
 
 export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
   try {
+    console.log(`-> Enviando RECUPERACION a ${emailDestino}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
       subject: `Recuperar contraseña - ${codigo}`,
-      html: `<div style="font-family: Arial; text-align:center;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}</p></div>`
+      html: `<div style="font-family:Arial; text-align:center; padding:20px;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}, codigo para recuperar contraseña. Vence en 15 min.</p></div>`
     });
     console.log('✅ RECUPERACION ENVIADA:', info.messageId);
     return { exito: true };
   } catch (error) {
-    console.error('❌ FALLO RECUPERACION:', error);
+    console.error('❌ FALLO RECUPERACION:', error.message);
     return { exito: false, error: error.message };
   }
 };
