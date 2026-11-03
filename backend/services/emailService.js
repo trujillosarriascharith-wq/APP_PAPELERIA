@@ -140,49 +140,48 @@ const transporter = nodemailer.createTransport({
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
     },
-    tls: { ciphers: 'SSLv3' }
+    tls: { rejectUnauthorized: false }
+});
+
+// ESTO ES LO IMPORTANTE, TE DICE EL ERROR EN RENDER LOGS
+transporter.verify((error, success) => {
+    if (error) {
+        console.error('❌ ERROR DE GMAIL - Revisa EMAIL_USER y EMAIL_PASS en Render:', error.message);
+    } else {
+        console.log('✅ GMAIL LISTO - Servidor listo para enviar desde:', process.env.EMAIL_USER);
+    }
 });
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    console.log('Intentando enviar VERIFICACION a:', emailDestino);
+    console.log(`-> Enviando VERIFICACION a ${emailDestino} con codigo ${codigo}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
-      subject: `Codigo de verificacion - ${codigo} - Papeleria Juan Jose`,
-      html: `<div style="font-family: Arial; max-width:500px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
-          <h2 style="color:#d81b60; text-align:center;">Papeleria Juan Jose</h2>
-          <p>Hola <b>${nombreDestino}</b>, tu codigo es:</p>
-          <div style="text-align:center; margin:20px 0;">
-            <span style="font-size:35px; font-weight:bold; letter-spacing:5px; color:#d81b60; background:#fdf2f4; padding:10px 20px; border-radius:8px;">${codigo}</span>
-          </div><p style="font-size:12px; color:#888;">Vence en 15 min.</p></div>`
+      subject: `Codigo de verificacion - ${codigo}`,
+      html: `<h2>${codigo}</h2><p>Hola ${nombreDestino}</p>`
     });
-    console.log('Correo VERIFICACION enviado:', info.messageId);
+    console.log('✅ ENVIADO VERIFICACION:', info.messageId);
     return { exito: true };
   } catch (error) {
-    console.error('ERROR VERIFICACION:', error);
+    console.error('❌ FALLO VERIFICACION:', error);
     return { exito: false, error: error.message };
   }
 };
 
 export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
   try {
-    console.log('Intentando enviar RECUPERACION a:', emailDestino);
+    console.log(`-> Enviando RECUPERACION a ${emailDestino} con codigo ${codigo}`);
     const info = await transporter.sendMail({
       from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
       to: emailDestino,
-      subject: `Recuperar contraseña - ${codigo} - Papeleria Juan Jose`,
-      html: `<div style="font-family: Arial; max-width:500px; margin:auto; padding:20px; border:1px solid #eee; border-radius:10px;">
-          <h2 style="color:#d81b60; text-align:center;">Recuperar Contraseña</h2>
-          <p>Hola <b>${nombreDestino}</b>, tu codigo para recuperar es:</p>
-          <div style="text-align:center; margin:20px 0;">
-            <span style="font-size:35px; font-weight:bold; letter-spacing:5px; color:#d81b60; background:#fdf2f4; padding:10px 20px; border-radius:8px;">${codigo}</span>
-          </div><p style="font-size:12px; color:#888;">Vence en 15 min.</p></div>`
+      subject: `Recuperar contraseña - ${codigo}`,
+      html: `<h2>${codigo}</h2><p>Hola ${nombreDestino}</p>`
     });
-    console.log('Correo RECUPERACION enviado:', info.messageId);
+    console.log('✅ ENVIADO RECUPERACION:', info.messageId);
     return { exito: true };
   } catch (error) {
-    console.error('ERROR RECUPERACION:', error);
+    console.error('❌ FALLO RECUPERACION:', error);
     return { exito: false, error: error.message };
   }
 };
