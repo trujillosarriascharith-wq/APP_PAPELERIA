@@ -504,7 +504,7 @@ export const forgotpassword = async (req, res) => {
     if (!email) return res.status(400).json({ error: "Email requerido" });
     const { data: usuario } = await obtenerPorEmail(email);
     if (!usuario) return res.status(404).json({ error: "Correo no encontrado" });
-    const idUsuario = usuario.id_usuario || usuario.id; // tu tabla usa 71
+    const idUsuario = usuario.id_usuario || usuario.id;
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
     const { error } = await crearCodigoRecuperacion(idUsuario, codigo);
     if (error) return res.status(500).json({ error: error.message });
@@ -517,9 +517,12 @@ export const forgotpassword = async (req, res) => {
 
 export const verifyCode = async (req, res) => {
   try {
-    console.log("verifyCode body recibido:", req.body); // <-- LOG IMPORTANTE
-    const { email, codigo, nuevaPassword, password, newPassword } = req.body;
-    const passFinal = nuevaPassword || password || newPassword;
+    console.log("verifyCode body recibido:", req.body);
+    // Aceptamos TODAS las variantes que envía tu APK
+    const { email, codigo } = req.body;
+    const passFinal = req.body.nuevaPassword || req.body.nuevapassword || req.body.nueva_password || req.body.password || req.body.newPassword || req.body.nuevaContrasena;
+
+    console.log("passFinal detectado:", passFinal ? "SI" : "NO");
 
     if (!email || !codigo) return res.status(400).json({ error: "Email y codigo requeridos" });
 
@@ -537,7 +540,6 @@ export const verifyCode = async (req, res) => {
 
     const hashed = await bcrypt.hash(passFinal, 10);
     
-    // TU TABLA USUARIOS USA id_usuario = 71
     const { error: updateError } = await supabase
       .from("usuarios")
       .update({ password: hashed })
@@ -549,7 +551,7 @@ export const verifyCode = async (req, res) => {
     }
 
     await marcarComoUsado(codigoValido.id);
-    console.log(`Password actualizado para usuario ${idUsuario} y codigo ${codigoValido.id} marcado como usado`);
+    console.log(`✅ Password actualizado para usuario ${idUsuario}, codigo ${codigoValido.id} ahora TRUE`);
 
     return res.status(200).json({ message: "Contraseña actualizada correctamente" });
   } catch (e) {
