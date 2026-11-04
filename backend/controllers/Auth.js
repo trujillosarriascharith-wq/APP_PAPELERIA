@@ -1,3 +1,4 @@
+
 // import bcrypt from "bcrypt";
 // import jwt from "jsonwebtoken";
 // import { supabase } from "../config/supabase.js";
@@ -10,14 +11,12 @@
 //     try {
 //         const { nombre, telefono, direccion, password, email } = req.body;
 
-//         //1.validar datos que lleguen todos los campos requeridos
 //         if (!nombre || !telefono || !direccion || !password || !email) {
 //             return res.status(400).json({
 //                 error: 'Todos los campos son requeridos : nombre, telefono, direccion, password y email'
 //             });
 //         }
 
-//         //2.verificar el email si ya existe
 //         const { data: usuarioExiste } = await obtenerPorEmail(email);
 //         if (usuarioExiste) {
 //             return res.status(400).json({
@@ -25,10 +24,8 @@
 //             });
 //         }
 
-//         //3.encriptar la contraseña
 //         const hashedpassword = await bcrypt.hash(password, 10);
 
-//         //subir la foto (si el usuario eligió una)
 //         let fotoUrl = null;
 //         if (req.file) {
 //             try {
@@ -39,14 +36,10 @@
 //             }
 //         }
 
-//         //4.rol por defecto
 //         const rolPorDefecto = 'usuario';
-
-//         //5.Generar codigo de 6 digitos y fecha de expiracion (15 minutos)
 //         const codigoVerificacion = Math.floor(100000 + Math.random() * 900000).toString();
 //         const codigoVerificacionExpiracion = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-//         //6.guardar en la base de datos
 //         const { data, error } = await crearUsuario(
 //             nombre,
 //             telefono,
@@ -64,38 +57,7 @@
 //             });
 //         }
 
-//         //7.Normalizar el objeto de usuario (soporta formato con o sin .single())
 //         const usuarioCreado = Array.isArray(data) ? data[0] : data;
-
-//         //8.Enviar el correo con el codigo de 6 digitos usando Brevo
-//         const resultadoEnvio = await enviarCodigoVerificacion(email, nombre, codigoVerificacion);
-
-//         //9.Si Brevo falló: borramos el usuario para que pueda volver a registrarse
-//         if (!resultadoEnvio || !resultadoEnvio.exito) {
-//             console.error("No se pudo enviar el correo de verificación a", email);
-
-//             const { error: errorBorrar } = await supabase
-//                 .from('usuarios')
-//                 .delete()
-//                 .eq('id_usuario', usuarioCreado.id_usuario);
-
-//             if (errorBorrar) {
-//                 console.error("No se pudo borrar el usuario tras fallar el correo", errorBorrar);
-//             }
-
-//             // TEMPORAL (depuración): muestra el motivo real del fallo de Brevo.
-//             // Quitar el detalle cuando se arregle el problema.
-//             const errBrevo = resultadoEnvio?.error;
-//             const detalle = errBrevo?.body
-//                 ? JSON.stringify(errBrevo.body)
-//                 : errBrevo?.message || 'sin detalle';
-
-//             return res.status(500).json({
-//                 error: 'No pudimos enviar el código. Detalle: ' +
-//                     (errBrevo?.statusCode || '') + ' ' + detalle,
-//                 emailEnviado: false
-//             });
-//         }
 
 //         const usuarioRespuesta = {
 //             id_usuario: usuarioCreado.id_usuario,
@@ -107,11 +69,17 @@
 //             foto: usuarioCreado.foto
 //         };
 
-//         return res.status(201).json({
+//         // 1. RESPONDEMOS AL INSTANTE A LA APK -> Esto te manda a la pantalla de verificar
+//         res.status(201).json({
 //             message: 'Usuario registrado con éxito. Hemos enviado un codigo de 6 digitos a tu correo.',
 //             emailEnviado: true,
 //             usuarios: usuarioRespuesta
 //         });
+
+//         // 2. ENVIAMOS EL CORREO EN SEGUNDO PLANO (ya no bloquea la APK)
+//         enviarCodigoVerificacion(email, nombre, codigoVerificacion)
+//             .then(r => console.log(`Código a ${email}: ${r.exito ? 'enviado' : 'falló'}`))
+//             .catch(e => console.error('Error envío verificación:', e));
 
 //     } catch (error) {
 //         console.error("error en el registro", error);
@@ -126,14 +94,12 @@
 //     try {
 //         const { nombre, email, password } = req.body;
 
-//         //validar que los campos esten llenos
 //         if (!nombre || !email || !password) {
 //             return res.status(400).json({
 //                 error: 'Todos los campos son requeridos :nombre, email y contraseña'
 //             });
 //         }
 
-//         //validamos si existe el correo
 //         const { data: usuarios } = await obtenerPorEmail(email);
 //         if (!usuarios) {
 //             return res.status(400).json({
@@ -141,14 +107,12 @@
 //             });
 //         }
 
-//         //Verificar si la contraseña es nula (usuario registrado con Google)
 //         if (!usuarios.password) {
 //             return res.status(400).json({
 //                 error: 'Esta cuenta usa Google. Inicia sesión con el botón de Google.'
 //             });
 //         }
 
-//         //validamos la contraseña
 //         const passwordValida = await bcrypt.compare(password, usuarios.password);
 //         if (!passwordValida) {
 //             return res.status(400).json({
@@ -156,14 +120,12 @@
 //             });
 //         }
 
-//         //verificamos si el usuario ha sido verificado
 //         if (!usuarios.isVerified) {
 //             return res.status(403).json({
 //                 error: 'Tu cuenta no ha sido verificada. Por favor ingrese el codigo enviado a tu correo antes de iniciar sesion.'
 //             });
 //         }
 
-//         //generamos el token JWT
 //         const token = jwt.sign(
 //             {
 //                 id_usuario: usuarios.id_usuario,
@@ -210,7 +172,6 @@
 //             });
 //         }
 
-//         //1.Buscar el usuario en supabase
 //         const { data: usuario, error: errorUsuario } = await supabase
 //             .from('usuarios')
 //             .select('id_usuario, nombre, telefono, direccion, email, rol, isVerified, codigoVerificacion, codigoVerificacionExpiracion')
@@ -223,21 +184,18 @@
 //             });
 //         }
 
-//         //2.Verificar si ya esta activo
 //         if (usuario.isVerified) {
 //             return res.status(400).json({
 //                 error: 'La cuenta ya se encuentra verificada'
 //             });
 //         }
 
-//         //3.comparar el codigo
 //         if (String(usuario.codigoVerificacion).trim() !== String(codigoVerificacion).trim()) {
 //             return res.status(400).json({
 //                 error: 'Codigo de verificación es  incorrecto'
 //             });
 //         }
 
-//         //4.verificar expiracion (15 minutos)
 //         const ahora = new Date();
 //         const expiracion = new Date(usuario.codigoVerificacionExpiracion);
 //         if (ahora > expiracion) {
@@ -246,7 +204,6 @@
 //             });
 //         }
 
-//         //5.Activar la cuenta
 //         const { error: errorUpdate } = await supabase
 //             .from('usuarios')
 //             .update({
@@ -273,7 +230,6 @@
 //         });
 //     }
 // };
-//  //2
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { supabase } from "../config/supabase.js";
@@ -284,7 +240,12 @@ import { subirFoto } from "../utils/subirFoto.js";
 //registro
 export const registro = async (req, res) => {
     try {
-        const { nombre, telefono, direccion, password, email } = req.body;
+        // Se quitan los espacios sobrantes al inicio y al final (la contraseña no se toca)
+        const nombre = String(req.body.nombre ?? '').trim();
+        const telefono = String(req.body.telefono ?? '').trim();
+        const direccion = String(req.body.direccion ?? '').trim();
+        const email = String(req.body.email ?? '').trim();
+        const { password } = req.body;
 
         if (!nombre || !telefono || !direccion || !password || !email) {
             return res.status(400).json({
@@ -378,7 +339,7 @@ export const login = async (req, res) => {
         const { data: usuarios } = await obtenerPorEmail(email);
         if (!usuarios) {
             return res.status(400).json({
-                error: 'Crdenciales incorrectas'
+                error: 'Credenciales incorrectas'
             });
         }
 
@@ -391,7 +352,16 @@ export const login = async (req, res) => {
         const passwordValida = await bcrypt.compare(password, usuarios.password);
         if (!passwordValida) {
             return res.status(400).json({
-                error: 'Crdenciales incorrectas'
+                error: 'Credenciales incorrectas'
+            });
+        }
+
+        // El nombre debe ser EXACTAMENTE igual al guardado en la base de datos
+        // (mayúsculas, tildes y espacios incluidos). Si el usuario lo cambió
+        // en su perfil, aquí se compara con el nombre nuevo.
+        if (String(nombre) !== String(usuarios.nombre)) {
+            return res.status(400).json({
+                error: 'Credenciales incorrectas'
             });
         }
 
