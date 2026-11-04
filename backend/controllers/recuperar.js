@@ -406,86 +406,152 @@
 //     return res.status(500).json({ error: e.message });
 //   }
 // };
+//sirve 9:11
+// import bcrypt from "bcrypt";
+// import { supabase } from "../config/supabase.js";
+// import { obtenerPorEmail } from "../models/user.js";
+// import { enviarCodigoRecuperacion } from "../services/emailService.js";
+// import { crearCodigoRecuperacion, obtenerCodigoValido, marcarComoUsado } from "../models/recuperar.js";
+
+// // POST /api/auth/forgot-password
+// export const forgotpassword = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) return res.status(400).json({ error: "Email requerido" });
+
+//     const { data: usuario } = await obtenerPorEmail(email);
+//     if (!usuario) return res.status(404).json({ error: "Correo no encontrado" });
+
+//     const idUsuario = usuario.id || usuario.id_usuario;
+//     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+
+//     const { error } = await crearCodigoRecuperacion(idUsuario, codigo);
+
+//     if (error) {
+//       console.error("Error supabase recovery_codes:", error);
+//       return res.status(500).json({ error: "Error guardando codigo: " + error.message });
+//     }
+
+//     res.status(200).json({ message: "Codigo enviado al correo", emailEnviado: true });
+
+//     enviarCodigoRecuperacion(email, usuario.nombre || usuario.name || "usuario", codigo)
+//       .then(r => console.log(`Recuperacion a ${email}: ${r.exito ? 'OK' : 'FALLO'}`))
+//       .catch(e => console.error(e));
+
+//   } catch (e) {
+//     console.error("forgotpassword error:", e);
+//     return res.status(500).json({ error: e.message });
+//   }
+// };
+
+// // POST /api/auth/verify-code -> verifica codigo y cambia password
+// export const verifyCode = async (req, res) => {
+//   try {
+//     const { email, codigo, nuevaPassword, password } = req.body;
+//     const passFinal = nuevaPassword || password;
+
+//     if (!email || !codigo) return res.status(400).json({ error: "Email y codigo requeridos" });
+
+//     const { data: usuario } = await obtenerPorEmail(email);
+//     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
+
+//     // Detecta si tu tabla usa "id" o "id_usuario"
+//     const idUsuario = usuario.id || usuario.id_usuario;
+//     const claveId = usuario.id ? "id" : "id_usuario";
+
+//     const { data: codigoValido, error } = await obtenerCodigoValido(idUsuario, codigo);
+    
+//     if (error || !codigoValido) {
+//       return res.status(400).json({ error: "Codigo incorrecto o expirado" });
+//     }
+
+//     // Si solo quieren verificar el codigo sin cambiar aun
+//     if (!passFinal) {
+//       return res.status(200).json({ message: "Codigo valido" });
+//     }
+
+//     const hashed = await bcrypt.hash(passFinal, 10);
+//     console.log(`Actualizando password para ${email} con ${claveId}=${idUsuario}`);
+
+//     const { error: updateError } = await supabase
+//       .from("usuarios")
+//       .update({ password: hashed })
+//       .eq(claveId, idUsuario);
+
+//     if (updateError) {
+//       console.error("Error update password:", updateError);
+//       return res.status(500).json({ error: "No se pudo actualizar: " + updateError.message });
+//     }
+
+//     await marcarComoUsado(codigoValido.id);
+
+//     return res.status(200).json({ message: "Contraseña actualizada correctamente" });
+
+//   } catch (e) {
+//     console.error("verifyCode error:", e);
+//     return res.status(500).json({ error: e.message });
+//   }
+// };
 import bcrypt from "bcrypt";
 import { supabase } from "../config/supabase.js";
 import { obtenerPorEmail } from "../models/user.js";
 import { enviarCodigoRecuperacion } from "../services/emailService.js";
 import { crearCodigoRecuperacion, obtenerCodigoValido, marcarComoUsado } from "../models/recuperar.js";
 
-// POST /api/auth/forgot-password
 export const forgotpassword = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email requerido" });
-
     const { data: usuario } = await obtenerPorEmail(email);
     if (!usuario) return res.status(404).json({ error: "Correo no encontrado" });
-
-    const idUsuario = usuario.id || usuario.id_usuario;
+    const idUsuario = usuario.id_usuario || usuario.id; // tu tabla usa 71
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-
     const { error } = await crearCodigoRecuperacion(idUsuario, codigo);
-
-    if (error) {
-      console.error("Error supabase recovery_codes:", error);
-      return res.status(500).json({ error: "Error guardando codigo: " + error.message });
-    }
-
-    res.status(200).json({ message: "Codigo enviado al correo", emailEnviado: true });
-
-    enviarCodigoRecuperacion(email, usuario.nombre || usuario.name || "usuario", codigo)
-      .then(r => console.log(`Recuperacion a ${email}: ${r.exito ? 'OK' : 'FALLO'}`))
-      .catch(e => console.error(e));
-
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(200).json({ message: "Codigo enviado", emailEnviado: true });
+    enviarCodigoRecuperacion(email, usuario.nombre || "usuario", codigo).catch(console.error);
   } catch (e) {
-    console.error("forgotpassword error:", e);
     return res.status(500).json({ error: e.message });
   }
 };
 
-// POST /api/auth/verify-code -> verifica codigo y cambia password
 export const verifyCode = async (req, res) => {
   try {
-    const { email, codigo, nuevaPassword, password } = req.body;
-    const passFinal = nuevaPassword || password;
+    console.log("verifyCode body recibido:", req.body); // <-- LOG IMPORTANTE
+    const { email, codigo, nuevaPassword, password, newPassword } = req.body;
+    const passFinal = nuevaPassword || password || newPassword;
 
     if (!email || !codigo) return res.status(400).json({ error: "Email y codigo requeridos" });
 
     const { data: usuario } = await obtenerPorEmail(email);
     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 
-    // Detecta si tu tabla usa "id" o "id_usuario"
-    const idUsuario = usuario.id || usuario.id_usuario;
-    const claveId = usuario.id ? "id" : "id_usuario";
+    const idUsuario = usuario.id_usuario || usuario.id;
 
-    const { data: codigoValido, error } = await obtenerCodigoValido(idUsuario, codigo);
-    
-    if (error || !codigoValido) {
-      return res.status(400).json({ error: "Codigo incorrecto o expirado" });
-    }
+    const { data: codigoValido } = await obtenerCodigoValido(idUsuario, codigo);
+    if (!codigoValido) return res.status(400).json({ error: "Codigo incorrecto o expirado" });
 
-    // Si solo quieren verificar el codigo sin cambiar aun
     if (!passFinal) {
       return res.status(200).json({ message: "Codigo valido" });
     }
 
     const hashed = await bcrypt.hash(passFinal, 10);
-    console.log(`Actualizando password para ${email} con ${claveId}=${idUsuario}`);
-
+    
+    // TU TABLA USUARIOS USA id_usuario = 71
     const { error: updateError } = await supabase
       .from("usuarios")
       .update({ password: hashed })
-      .eq(claveId, idUsuario);
+      .eq("id_usuario", idUsuario);
 
     if (updateError) {
-      console.error("Error update password:", updateError);
-      return res.status(500).json({ error: "No se pudo actualizar: " + updateError.message });
+      console.error("Error update:", updateError);
+      return res.status(500).json({ error: updateError.message });
     }
 
     await marcarComoUsado(codigoValido.id);
+    console.log(`Password actualizado para usuario ${idUsuario} y codigo ${codigoValido.id} marcado como usado`);
 
     return res.status(200).json({ message: "Contraseña actualizada correctamente" });
-
   } catch (e) {
     console.error("verifyCode error:", e);
     return res.status(500).json({ error: e.message });
