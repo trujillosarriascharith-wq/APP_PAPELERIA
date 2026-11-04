@@ -242,10 +242,90 @@
 //     }
 //   }
 // };
+//codigo que funciona para crear la cuenta no borrar
+// import bcrypt from "bcrypt";
+// import { supabase } from "../config/supabase.js";
+// import { obtenerPorEmail } from "../models/user.js";
+// import { enviarCodigoRecuperacion } from "../services/emailService.js";
+
+// // POST /api/auth/forgot-password
+// export const forgotpassword = async (req, res) => {
+//   try {
+//     const { email } = req.body;
+//     if (!email) return res.status(400).json({ error: "Email requerido" });
+
+//     const { data: usuario } = await obtenerPorEmail(email);
+//     if (!usuario) return res.status(404).json({ error: "Correo no encontrado" });
+
+//     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+//     const expiracion = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+
+//     const { error } = await supabase
+//       .from("usuarios")
+//       .update({ 
+//         codigoRecuperacion: codigo, 
+//         codigoRecuperacionExpiracion: expiracion 
+//       })
+//       .eq("id_usuario", usuario.id_usuario);
+
+//     if (error) return res.status(500).json({ error: "Error guardando codigo" });
+
+//     // Respondemos rapido a la APK
+//     res.status(200).json({ message: "Codigo enviado al correo", emailEnviado: true });
+
+//     // Enviamos en segundo plano
+//     enviarCodigoRecuperacion(email, usuario.nombre, codigo)
+//       .then(r => console.log(`Recuperacion a ${email}: ${r.exito ? 'OK' : 'FALLO'}`))
+//       .catch(e => console.error(e));
+
+//   } catch (e) {
+//     console.error("forgotpassword error:", e);
+//     return res.status(500).json({ error: e.message });
+//   }
+// };
+
+// // POST /api/auth/verify-code  -> verifica codigo y cambia password
+// export const verifyCode = async (req, res) => {
+//   try {
+//     const { email, codigo, nuevaPassword, password } = req.body;
+//     const passFinal = nuevaPassword || password;
+
+//     if (!email || !codigo) return res.status(400).json({ error: "Email y codigo requeridos" });
+
+//     const { data: usuario } = await supabase.from("usuarios").select("*").eq("email", email).single();
+//     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
+
+//     if (String(usuario.codigoRecuperacion).trim() !== String(codigo).trim()) {
+//       return res.status(400).json({ error: "Codigo incorrecto" });
+//     }
+//     if (new Date() > new Date(usuario.codigoRecuperacionExpiracion)) {
+//       return res.status(400).json({ error: "Codigo expirado, solicita otro" });
+//     }
+
+//     // Si solo quieren verificar el codigo sin cambiar aun
+//     if (!passFinal) {
+//       return res.status(200).json({ message: "Codigo valido" });
+//     }
+
+//     const hashed = await bcrypt.hash(passFinal, 10);
+//     await supabase.from("usuarios").update({
+//         password: hashed,
+//         codigoRecuperacion: null,
+//         codigoRecuperacionExpiracion: null
+//       }).eq("id_usuario", usuario.id_usuario);
+
+//     return res.status(200).json({ message: "Contraseña actualizada correctamente" });
+
+//   } catch (e) {
+//     console.error("verifyCode error:", e);
+//     return res.status(500).json({ error: e.message });
+//   }
+// };
 import bcrypt from "bcrypt";
 import { supabase } from "../config/supabase.js";
 import { obtenerPorEmail } from "../models/user.js";
 import { enviarCodigoRecuperacion } from "../services/emailService.js";
+import { crearCodigoRecuperacion, obtenerCodigoValido, marcarComoUsado } from "../models/recuperar.js";
 
 // POST /api/auth/forgot-password
 export const forgotpassword = async (req, res) => {
@@ -256,24 +336,23 @@ export const forgotpassword = async (req, res) => {
     const { data: usuario } = await obtenerPorEmail(email);
     if (!usuario) return res.status(404).json({ error: "Correo no encontrado" });
 
+    // Tu tabla usuarios usa "id" no "id_usuario" - usamos el que exista
+    const idUsuario = usuario.id || usuario.id_usuario;
+
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiracion = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    const { error } = await supabase
-      .from("usuarios")
-      .update({ 
-        codigoRecuperacion: codigo, 
-        codigoRecuperacionExpiracion: expiracion 
-      })
-      .eq("id_usuario", usuario.id_usuario);
+    // ESTE ES EL ARREGLO: Guardamos en recovery_codes, no en usuarios
+    const { error } = await crearCodigoRecuperacion(idUsuario, codigo);
 
-    if (error) return res.status(500).json({ error: "Error guardando codigo" });
+    if (error) {
+      console.error("Error supabase recovery_codes:", error);
+      return res.status(500).json({ error: "Error guardando codigo: " + error.message });
+    }
 
-    // Respondemos rapido a la APK
     res.status(200).json({ message: "Codigo enviado al correo", emailEnviado: true });
 
-    // Enviamos en segundo plano
-    enviarCodigoRecuperacion(email, usuario.nombre, codigo)
+    // Enviamos con Brevo en segundo plano
+    enviarCodigoRecuperacion(email, usuario.nombre || usuario.name || "usuario", codigo)
       .then(r => console.log(`Recuperacion a ${email}: ${r.exito ? 'OK' : 'FALLO'}`))
       .catch(e => console.error(e));
 
@@ -283,7 +362,7 @@ export const forgotpassword = async (req, res) => {
   }
 };
 
-// POST /api/auth/verify-code  -> verifica codigo y cambia password
+// POST /api/auth/verify-code
 export const verifyCode = async (req, res) => {
   try {
     const { email, codigo, nuevaPassword, password } = req.body;
@@ -291,27 +370,33 @@ export const verifyCode = async (req, res) => {
 
     if (!email || !codigo) return res.status(400).json({ error: "Email y codigo requeridos" });
 
-    const { data: usuario } = await supabase.from("usuarios").select("*").eq("email", email).single();
+    const { data: usuario } = await obtenerPorEmail(email);
     if (!usuario) return res.status(404).json({ error: "Usuario no encontrado" });
 
-    if (String(usuario.codigoRecuperacion).trim() !== String(codigo).trim()) {
-      return res.status(400).json({ error: "Codigo incorrecto" });
-    }
-    if (new Date() > new Date(usuario.codigoRecuperacionExpiracion)) {
-      return res.status(400).json({ error: "Codigo expirado, solicita otro" });
+    const idUsuario = usuario.id || usuario.id_usuario;
+
+    const { data: codigoValido, error } = await obtenerCodigoValido(idUsuario, codigo);
+    
+    if (error || !codigoValido) {
+      return res.status(400).json({ error: "Codigo incorrecto o expirado" });
     }
 
-    // Si solo quieren verificar el codigo sin cambiar aun
     if (!passFinal) {
       return res.status(200).json({ message: "Codigo valido" });
     }
 
     const hashed = await bcrypt.hash(passFinal, 10);
-    await supabase.from("usuarios").update({
-        password: hashed,
-        codigoRecuperacion: null,
-        codigoRecuperacionExpiracion: null
-      }).eq("id_usuario", usuario.id_usuario);
+    
+    // Actualizamos password en usuarios
+    const { error: updateError } = await supabase
+      .from("usuarios")
+      .update({ password: hashed })
+      .eq("id", idUsuario);
+
+    if (updateError) return res.status(500).json({ error: updateError.message });
+
+    // Marcamos el codigo como usado
+    await marcarComoUsado(codigoValido.id);
 
     return res.status(200).json({ message: "Contraseña actualizada correctamente" });
 
