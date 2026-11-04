@@ -130,31 +130,43 @@
 //     return { exito: false, error: error.message };
 //   }
 // };
-const RESEND_API = "https://api.resend.com/emails";
+const BREVO_API = "https://api.brevo.com/v3/smtp/email";
 
-async function enviarConResend(to, subject, html, tag) {
+async function enviarConBrevo(to, subject, html, tag) {
   try {
-    console.log(`-> Enviando ${tag} a ${to} con Resend`);
-    const res = await fetch(RESEND_API, {
+    console.log(`-> Enviando ${tag} a ${to} con Brevo`);
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error("Falta BREVO_API_KEY en Render Environment");
+    }
+
+    const res = await fetch(BREVO_API, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json'
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Papeleria Juan Jose <onboarding@resend.dev>',
-        to: [to],
+        sender: {
+          name: "Papeleria Juan Jose",
+          email: "trujillosarriascharith@gmail.com" // <-- TU CORREO VERIFICADO EN BREVO
+        },
+        to: [{ email: to }],
         subject: subject,
-        html: html
+        htmlContent: html
       })
     });
+
     const data = await res.json();
+
     if (!res.ok) {
       console.error(`❌ FALLO ${tag}:`, data);
       return { exito: false, error: JSON.stringify(data) };
     }
-    console.log(`✅ ${tag} ENVIADA:`, data.id);
-    return { exito: true };
+
+    console.log(`✅ ${tag} ENVIADA:`, data.messageId);
+    return { exito: true, messageId: data.messageId };
+
   } catch (e) {
     console.error(`❌ FALLO ${tag}:`, e.message);
     return { exito: false, error: e.message };
@@ -162,11 +174,21 @@ async function enviarConResend(to, subject, html, tag) {
 }
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
-  const html = `<div style="font-family:Arial; text-align:center;"><h2 style="color:#d81b60; font-size:35px;">${codigo}</h2><p>Hola ${nombreDestino}, tu codigo vence en 15 min.</p></div>`;
-  return await enviarConResend(emailDestino, `Codigo - ${codigo}`, html, "VERIFICACION");
+  const html = `
+  <div style="font-family:Arial; padding:20px; text-align:center; border:1px solid #eee; border-radius:12px;">
+    <h1 style="color:#d81b60;">Papeleria Juan Jose</h1>
+    <h2 style="font-size:36px; letter-spacing:5px;">${codigo}</h2>
+    <p>Hola <b>${nombreDestino}</b>, tu codigo de verificación vence en 15 minutos.</p>
+  </div>`;
+  return await enviarConBrevo(emailDestino, `Tu codigo de verificacion es ${codigo}`, html, "VERIFICACION");
 };
 
 export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
-  const html = `<div style="font-family:Arial; text-align:center;"><h2 style="color:#d81b60; font-size:35px;">${codigo}</h2><p>Hola ${nombreDestino}, codigo para recuperar contraseña. Vence en 15 min.</p></div>`;
-  return await enviarConResend(emailDestino, `Recuperar - ${codigo}`, html, "RECUPERACION");
+  const html = `
+  <div style="font-family:Arial; padding:20px; text-align:center; border:1px solid #eee; border-radius:12px;">
+    <h1 style="color:#d81b60;">Recuperar Contraseña</h1>
+    <h2 style="font-size:36px; letter-spacing:5px;">${codigo}</h2>
+    <p>Hola <b>${nombreDestino}</b>, tu codigo para recuperar contraseña vence en 15 minutos.</p>
+  </div>`;
+  return await enviarConBrevo(emailDestino, `Recuperar contraseña - ${codigo}`, html, "RECUPERACION");
 };
