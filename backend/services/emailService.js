@@ -130,59 +130,43 @@
 //     return { exito: false, error: error.message };
 //   }
 // };
-import nodemailer from 'nodemailer';
+const RESEND_API = "https://api.resend.com/emails";
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465, // CAMBIADO DE 587 a 465
-    secure: true, // CAMBIADO a true
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    },
-    connectionTimeout: 10000, // 10 segundos
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-});
-
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('❌ ERROR DE GMAIL:', error.message);
-    } else {
-        console.log('✅ GMAIL LISTO desde:', process.env.EMAIL_USER);
+async function enviarConResend(to, subject, html, tag) {
+  try {
+    console.log(`-> Enviando ${tag} a ${to} con Resend`);
+    const res = await fetch(RESEND_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Papeleria Juan Jose <onboarding@resend.dev>',
+        to: [to],
+        subject: subject,
+        html: html
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error(`❌ FALLO ${tag}:`, data);
+      return { exito: false, error: JSON.stringify(data) };
     }
-});
+    console.log(`✅ ${tag} ENVIADA:`, data.id);
+    return { exito: true };
+  } catch (e) {
+    console.error(`❌ FALLO ${tag}:`, e.message);
+    return { exito: false, error: e.message };
+  }
+}
 
 export const enviarCodigoVerificacion = async (emailDestino, nombreDestino, codigo) => {
-  try {
-    console.log(`-> Enviando VERIFICACION a ${emailDestino}`);
-    const info = await transporter.sendMail({
-      from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
-      to: emailDestino,
-      subject: `Codigo de verificacion - ${codigo}`,
-      html: `<div style="font-family:Arial; text-align:center; padding:20px;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}, tu codigo vence en 15 min.</p></div>`
-    });
-    console.log('✅ VERIFICACION ENVIADA:', info.messageId);
-    return { exito: true };
-  } catch (error) {
-    console.error('❌ FALLO VERIFICACION:', error.message);
-    return { exito: false, error: error.message };
-  }
+  const html = `<div style="font-family:Arial; text-align:center;"><h2 style="color:#d81b60; font-size:35px;">${codigo}</h2><p>Hola ${nombreDestino}, tu codigo vence en 15 min.</p></div>`;
+  return await enviarConResend(emailDestino, `Codigo - ${codigo}`, html, "VERIFICACION");
 };
 
 export const enviarCodigoRecuperacion = async (emailDestino, nombreDestino, codigo) => {
-  try {
-    console.log(`-> Enviando RECUPERACION a ${emailDestino}`);
-    const info = await transporter.sendMail({
-      from: `"Papeleria Juan Jose" <${process.env.EMAIL_USER}>`,
-      to: emailDestino,
-      subject: `Recuperar contraseña - ${codigo}`,
-      html: `<div style="font-family:Arial; text-align:center; padding:20px;"><h2 style="color:#d81b60;">${codigo}</h2><p>Hola ${nombreDestino}, codigo para recuperar contraseña. Vence en 15 min.</p></div>`
-    });
-    console.log('✅ RECUPERACION ENVIADA:', info.messageId);
-    return { exito: true };
-  } catch (error) {
-    console.error('❌ FALLO RECUPERACION:', error.message);
-    return { exito: false, error: error.message };
-  }
+  const html = `<div style="font-family:Arial; text-align:center;"><h2 style="color:#d81b60; font-size:35px;">${codigo}</h2><p>Hola ${nombreDestino}, codigo para recuperar contraseña. Vence en 15 min.</p></div>`;
+  return await enviarConResend(emailDestino, `Recuperar - ${codigo}`, html, "RECUPERACION");
 };
