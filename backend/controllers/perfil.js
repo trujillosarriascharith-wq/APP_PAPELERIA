@@ -387,3 +387,53 @@ export const subirFoto = async (req, res) => {
         return res.status(500).json({ error: error.message });
     }
 };
+// DELETE /api/perfil -> elimina la cuenta del usuario que inició sesión
+export const eliminarCuenta = async (req, res) => {
+    try {
+        const id = req.usuario.id_usuario;
+
+        const { data: usuario, error: errorUsuario } = await supabase
+            .from('usuarios')
+            .select('id_usuario, rol')
+            .eq('id_usuario', id)
+            .maybeSingle();
+
+        if (errorUsuario) {
+            return res.status(500).json({ error: 'No se pudo consultar el usuario' });
+        }
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        // Evita borrar al único administrador (ajusta 'admin' al valor real de tu columna rol)
+        if (usuario.rol === 'admin') {
+            const { count } = await supabase
+                .from('usuarios')
+                .select('id_usuario', { count: 'exact', head: true })
+                .eq('rol', 'admin');
+            if ((count ?? 0) <= 1) {
+                return res.status(400).json({ error: 'No puedes eliminar al único administrador' });
+            }
+        }
+
+        const { error } = await supabase
+            .from('usuarios')
+            .delete()
+            .eq('id_usuario', id);
+
+        if (error) {
+            console.error('Error al eliminar cuenta:', error.message);
+            if (error.code === '23503') {
+                return res.status(409).json({
+                    error: 'No se pudo eliminar: la cuenta tiene datos asociados',
+                });
+            }
+            return res.status(500).json({ error: 'No se pudo eliminar la cuenta' });
+        }
+
+        return res.status(200).json({ message: 'Cuenta eliminada correctamente' });
+    } catch (error) {
+        console.error('Error al eliminar cuenta', error);
+        return res.status(500).json({ error: error.message });
+    }
+};
