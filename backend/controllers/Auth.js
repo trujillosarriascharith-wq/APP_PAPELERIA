@@ -1,4 +1,4 @@
-
+// //correcto hoy 23
 // import bcrypt from "bcrypt";
 // import jwt from "jsonwebtoken";
 // import { supabase } from "../config/supabase.js";
@@ -9,7 +9,12 @@
 // //registro
 // export const registro = async (req, res) => {
 //     try {
-//         const { nombre, telefono, direccion, password, email } = req.body;
+//         // Se quitan los espacios sobrantes al inicio y al final (la contraseña no se toca)
+//         const nombre = String(req.body.nombre ?? '').trim();
+//         const telefono = String(req.body.telefono ?? '').trim();
+//         const direccion = String(req.body.direccion ?? '').trim();
+//         const email = String(req.body.email ?? '').trim();
+//         const { password } = req.body;
 
 //         if (!nombre || !telefono || !direccion || !password || !email) {
 //             return res.status(400).json({
@@ -103,7 +108,7 @@
 //         const { data: usuarios } = await obtenerPorEmail(email);
 //         if (!usuarios) {
 //             return res.status(400).json({
-//                 error: 'Crdenciales incorrectas'
+//                 error: 'Credenciales incorrectas'
 //             });
 //         }
 
@@ -116,7 +121,16 @@
 //         const passwordValida = await bcrypt.compare(password, usuarios.password);
 //         if (!passwordValida) {
 //             return res.status(400).json({
-//                 error: 'Crdenciales incorrectas'
+//                 error: 'Credenciales incorrectas'
+//             });
+//         }
+
+//         // El nombre debe ser EXACTAMENTE igual al guardado en la base de datos
+//         // (mayúsculas, tildes y espacios incluidos). Si el usuario lo cambió
+//         // en su perfil, aquí se compara con el nombre nuevo.
+//         if (String(nombre) !== String(usuarios.nombre)) {
+//             return res.status(400).json({
+//                 error: 'Credenciales incorrectas'
 //             });
 //         }
 
@@ -230,6 +244,7 @@
 //         });
 //     }
 // };
+
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { supabase } from "../config/supabase.js";
@@ -371,6 +386,8 @@ export const login = async (req, res) => {
             });
         }
 
+        // La sesión dura 30 días para que el usuario no tenga que volver a
+        // iniciar sesión cada vez que abre la app
         const token = jwt.sign(
             {
                 id_usuario: usuarios.id_usuario,
@@ -381,7 +398,7 @@ export const login = async (req, res) => {
                 rol: usuarios.rol
             },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }
+            { expiresIn: '30d' }
         );
 
         return res.status(200).json({
@@ -475,6 +492,5 @@ export const verificarCuenta = async (req, res) => {
         });
     }
 };
-
 
 
